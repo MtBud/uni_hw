@@ -27,7 +27,7 @@ bool isLeap( int y ){
     return false;
 }
 
-// check if date is valid
+// check if date is valid(true) or not(false)
 bool checkDateValidity( int y, int m, int d ){
     const int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if( y < 2000 )
@@ -83,12 +83,38 @@ bool isWorkDay ( int y, int m, int d )
     return true;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
+// checks if interval 1 is smaller than 2
+bool compareInterval( int y1, int m1, int d1,
+                     int y2, int m2, int d2 ){
+    if( y2 < y1 )
+        return false;
+    if( y2 == y1 && m2 < m1 )
+        return false;
+    if( y2 == y1 && m2 == m1 && d2 < d1 )
+        return false;
+    return true;
+}
+
 TResult countDays ( int y1, int m1, int d1,
                     int y2, int m2, int d2 )
 {
     TResult result;
+    result.m_TotalDays = -1;
+    result.m_WorkDays = -1;
+    if( !checkDateValidity(y1, m1, d1) || !checkDateValidity(y2, m2, d2) )
+        return result;
+    if( !compareInterval(y1, m1, d1, y2, m2, d2) )
+        return result;
+
+    for( int i = y1; i <= y2; i ++ ){
+        for( int j = 0;)
+    }
     result.m_TotalDays = 0;
     result.m_WorkDays = 0;
+
+
     return result;
 }
 
