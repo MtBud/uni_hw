@@ -1,13 +1,45 @@
 #ifndef __PROGTEST__
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+
 typedef struct
 {
     int m_TotalDays;
     int m_WorkDays;
 } TResult;
+
 #endif /* __PROGTEST__ */
+
+//--------------------------------------------------------------------------
+
+// function checks if a year is a leap year
+bool isLeap( int y ){
+    if( y % 4000 == 0 )
+        return false;
+    if( y % 400 == 0 )
+        return true;
+    if( y % 100 == 0 )
+        return false;
+    if( y % 4 == 0 )
+        return true;
+    return false;
+}
+
+// check if date is valid
+bool checkDateValidity( int y, int m, int d ){
+    const int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if( y < 2000 )
+        return false;
+    if( m < 1 || m > 12 )
+        return false;
+    if( m == 2 && d == 29 && !isLeap(y) )
+        return false;
+    if( d < 0 || d > daysInMonth[m - 1] )
+        return false;
+    return true;
+}
 
 bool isWorkDay ( int y, int m, int d )
 {
