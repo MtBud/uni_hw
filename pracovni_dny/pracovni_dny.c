@@ -64,7 +64,7 @@ int calcDayOfWeek( int y, int m, int d ){
 
     // formula for the calculation
     int dayOfWeek = (yearCode + monthCode[m-1] + centuryCode + d - leapYCode) % 7;
-    printf("Day of Week: %d\n", dayOfWeek );
+    //printf("Day of Week: %d\n", dayOfWeek );
 
     return dayOfWeek;
 }
@@ -72,9 +72,9 @@ int calcDayOfWeek( int y, int m, int d ){
 // function checks if the day given is a work day(true) or not(false)
 bool isWorkDay ( int y, int m, int d )
 {
-    printf("Y M D: %d %d %d\n", y, m, d );
+    //printf("Y M D: %d %d %d\n", y, m, d );
     if( !checkDateValidity( y, m, d ) ){
-        printf("Date isn't valid\n");
+        printf("Date isn't valid: %d %d %d\n", y, m, d);
         return false;
     }
 
@@ -130,12 +130,24 @@ int totalDays ( int y1, int m1, int d1,
     for( int i = 0; i < m2 - 1; i++ )
         sum2 += daysInMonth[i];
 
-    return 0;
+    return sum2 - sum1 + 1;
 }
 
-int countWorkDaysMonth( int y1, int m1, int d1 ){
-    int firstDay = calcDayOfWeek( y1, m1, d1 );
-    int numFreeDays;
+int countWD_interval( int y1, int m1, int d1, int d2 ){
+    int numOfDays = 0;
+    for( int i = d1; i <= d2; i++ ){
+        if(isWorkDay(y1,m1,i))
+            numOfDays ++;
+    }
+    return numOfDays;
+}
+
+// counts number of work days for given month
+int countWorkDaysMonth( int y1, int m1 ){
+    int firstDay = calcDayOfWeek( y1, m1, 1 );
+    int numFreeDays, numWorkDays = daysInMonth[m1-1];
+    if( isLeap(y1) && numWorkDays == 28 )
+        numWorkDays ++;
     switch (firstDay){
         // if month starts with sunday
         case 0:
@@ -174,6 +186,7 @@ int countWorkDaysMonth( int y1, int m1, int d1 ){
                     numFreeDays = 8;
                     break;
             }
+            break;
 
         // if month starts with thursday
         case 4:
@@ -199,13 +212,40 @@ int countWorkDaysMonth( int y1, int m1, int d1 ){
         }
     }
 
-    int workDays = daysInMonth[m1 - 1]
+    return numWorkDays - numFreeDays;
 }
 
 int countWorkDays( int y1, int m1, int d1,
                    int y2, int m2, int d2 ){
+    if( y1 == y2 && m1 == m2 ){
+        return countWD_interval(y1, m1, d1, d2);
+    }
 
+    int numOfDays = 0;
+    for(int i = y1; i <= y2; i++){
+        if(i == y1){
+            if(isLeap(y1) && m1 == 2)
+                numOfDays += countWD_interval( y1, m1, d1, daysInMonth[m1 - 1] + 1);
+            else
+                numOfDays += countWD_interval( y1, m1, d1, daysInMonth[m1 - 1]);
+            for( int j = m1 + 1; j <= 12; j++ ){
+                if( i == y2 && j == m2 ){
+                    numOfDays += countWD_interval( y2, m2, 1, d2);
+                    break;
+                }
+                numOfDays += countWorkDaysMonth( i, j );
+            }
+        }
+        for( int j = 0; j <= 12; j++ ){
+            if( i == y2 && j == m2 ){
+                numOfDays += countWD_interval( y2, m2, 1, d2);
+                break;
+            }
+            numOfDays += countWorkDaysMonth( i, j );
+        }
+    }
 
+    return numOfDays;
 }
 
 TResult countDays ( int y1, int m1, int d1,
@@ -221,7 +261,9 @@ TResult countDays ( int y1, int m1, int d1,
 
 
     result.m_TotalDays = totalDays( y1, m1, d1, y2, m2, d2 );
-    result.m_WorkDays = 0;
+    printf("Total Days: %d\n", result.m_TotalDays );
+    result.m_WorkDays = countWorkDays( y1, m1, d1, y2, m2, d2 );
+    printf("Work Days: %d\n\n", result.m_WorkDays );
 
 
     return result;
@@ -230,7 +272,7 @@ TResult countDays ( int y1, int m1, int d1,
 #ifndef __PROGTEST__
 int main ( int argc, char * argv [] )
 {
-    //TResult r;
+    TResult r;
 
     assert ( isWorkDay ( 2023, 10, 10 ) );
 
@@ -250,7 +292,7 @@ int main ( int argc, char * argv [] )
 
     assert ( ! isWorkDay ( 1996,  1,  2 ) );
 
-    /*
+
     r = countDays ( 2023, 11,  1,
                     2023, 11, 30 );
     assert ( r . m_TotalDays == 30 );
@@ -305,7 +347,7 @@ int main ( int argc, char * argv [] )
                     2023,  2, 29 );
     assert ( r . m_TotalDays == -1 );
     assert ( r . m_WorkDays == -1 );
-     */
+
 
     return EXIT_SUCCESS;
 }
