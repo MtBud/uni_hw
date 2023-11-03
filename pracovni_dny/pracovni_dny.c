@@ -17,6 +17,8 @@ typedef struct
 const int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const int holidayMonths[] = {1,5,5,7,7,9,10,11,12,12,12};
 const int holidayDays[] = {1,1,8,5,6,28,28,17,24,25,26};
+const int monthCode[] = {0,3,3,6,1,4,6,2,5,0,3,5};
+
 
 
 // function checks if a year is a leap year
@@ -54,7 +56,6 @@ int calcDayOfWeek( int y, int m, int d ){
     // calculate the different codes needed for the formula
     int YY = y % 100;
     int yearCode = (YY + (YY / 4)) % 7;
-    const int monthCode[] = {0,3,3,6,1,4,6,2,5,0,3,5};
     int centuryCode = 6;
     if( y > 2100 )
         centuryCode = 4;
@@ -227,7 +228,7 @@ int countWorkDays( int y1, int m1, int d1,
             if(isLeap(y1) && m1 == 2)
                 numOfDays += countWD_interval( y1, m1, d1, daysInMonth[m1 - 1] + 1);
             else
-                numOfDays += countWD_interval( y1, m1, d1, daysInMonth[m1 - 1]);
+                numOfDays += countWD_interval( y1, m1, d1, daysInMonth[m1 - 1] );
             for( int j = m1 + 1; j <= 12; j++ ){
                 if( i == y2 && j == m2 ){
                     numOfDays += countWD_interval( y2, m2, 1, d2);
@@ -235,6 +236,7 @@ int countWorkDays( int y1, int m1, int d1,
                 }
                 numOfDays += countWorkDaysMonth( i, j );
             }
+            continue;
         }
         for( int j = 0; j <= 12; j++ ){
             if( i == y2 && j == m2 ){
