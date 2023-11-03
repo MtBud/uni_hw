@@ -14,6 +14,11 @@ typedef struct
 
 //----------------------------------------------------------------------------------------------------------------------
 
+const int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+const int holidayMonths[] = {1,5,5,7,7,9,10,11,12,12,12};
+const int holidayDays[] = {1,1,8,5,6,28,28,17,24,25,26};
+
+
 // function checks if a year is a leap year
 bool isLeap( int y ){
     if( y % 4000 == 0 )
@@ -29,7 +34,6 @@ bool isLeap( int y ){
 
 // check if date is valid(true) or not(false)
 bool checkDateValidity( int y, int m, int d ){
-    const int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if( y < 2000 )
         return false;
     if( m < 1 || m > 12 )
@@ -46,23 +50,7 @@ bool checkDateValidity( int y, int m, int d ){
     return true;
 }
 
-// function checks if the day given is a work day(true) or not(false)
-bool isWorkDay ( int y, int m, int d )
-{
-    printf("Y M D: %d %d %d\n", y, m, d );
-    if( !checkDateValidity( y, m, d ) ){
-        printf("Date isn't valid\n");
-        return false;
-    }
-
-    // check if the date is holiday
-    const int holidayMonths[] = {1,5,5,7,7,9,10,11,12,12,12};
-    const int holidayDays[] = {1,1,8,5,6,28,28,17,24,25,26};
-    for( int i = 0; i < 12; i ++ ){
-        if(holidayMonths[i] == m && holidayDays[i] ==d )
-            return false;
-    }
-
+int calcDayOfWeek( int y, int m, int d ){
     // calculate the different codes needed for the formula
     int YY = y % 100;
     int yearCode = (YY + (YY / 4)) % 7;
@@ -77,6 +65,27 @@ bool isWorkDay ( int y, int m, int d )
     // formula for the calculation
     int dayOfWeek = (yearCode + monthCode[m-1] + centuryCode + d - leapYCode) % 7;
     printf("Day of Week: %d\n", dayOfWeek );
+
+    return dayOfWeek;
+}
+
+// function checks if the day given is a work day(true) or not(false)
+bool isWorkDay ( int y, int m, int d )
+{
+    printf("Y M D: %d %d %d\n", y, m, d );
+    if( !checkDateValidity( y, m, d ) ){
+        printf("Date isn't valid\n");
+        return false;
+    }
+
+    // check if the date is holiday
+    for( int i = 0; i < 11; i ++ ){
+        if(holidayMonths[i] == m && holidayDays[i] ==d )
+            return false;
+    }
+
+    int dayOfWeek = calcDayOfWeek( y, m, d );
+    // 0 is sunday, 6 is saturday
     if( dayOfWeek == 0 || dayOfWeek == 6 )
         return false;
 
@@ -97,6 +106,108 @@ bool compareInterval( int y1, int m1, int d1,
     return true;
 }
 
+// counts number of leap years before given date
+int countLeapYears ( int y1, int m1 ){
+    if ( m1 <= 2)
+        y1--;
+    return (y1 / 4) - (y1 / 100) + (y1 / 400);
+}
+
+
+// counts total number of days between two dates
+// counts number of days since 0 0 0 for both dates and then subtracts the outcomes
+int totalDays ( int y1, int m1, int d1,
+                int y2, int m2, int d2 ){
+    // sum of first date
+    long long int sum1 = y1 * 365 + d1;
+    sum1 += countLeapYears( y1, m1 );
+    for( int i = 0; i < m1 - 1; i++ )
+        sum1 += daysInMonth[i];
+
+    // sum of second date
+    long long int sum2 = y2 * 365 + d2;
+    sum2 += countLeapYears( y2, m2 );
+    for( int i = 0; i < m2 - 1; i++ )
+        sum2 += daysInMonth[i];
+
+    return 0;
+}
+
+int countWorkDaysMonth( int y1, int m1, int d1 ){
+    int firstDay = calcDayOfWeek( y1, m1, d1 );
+    int numFreeDays;
+    switch (firstDay){
+        // if month starts with sunday
+        case 0:
+            if( daysInMonth[m1 - 1] == 28 ){
+                if( isLeap(y1) )
+                    numFreeDays = 9;
+                else
+                    numFreeDays = 8;
+                break;
+            }
+            numFreeDays = 9;
+            break;
+
+        // if month starts with saturday
+        case 6:
+            if( daysInMonth[m1 - 1] == 28 ){
+                if( isLeap(y1) )
+                    numFreeDays = 9;
+                else
+                    numFreeDays = 8;
+                break;
+            }
+            numFreeDays = 10;
+            break;
+
+        // if month starts with friday
+        case 5:
+            switch( daysInMonth[m1 - 1] ){
+                case 31:
+                    numFreeDays = 10;
+                    break;
+                case 30:
+                    numFreeDays = 9;
+                    break;
+                case 28:
+                    numFreeDays = 8;
+                    break;
+            }
+
+        // if month starts with thursday
+        case 4:
+            if( daysInMonth[m1 - 1] == 31 ){
+                numFreeDays = 9;
+                break;
+            }
+            numFreeDays = 8;
+            break;
+
+        // for all other days of week
+        default:
+            numFreeDays = 8;
+            break;
+    }
+
+    // add more days if holiday isn't on weekend
+    for( int i = 0; i < 11; i++ ){
+        if( holidayMonths[i] == m1 ){
+            int x = calcDayOfWeek( y1, holidayMonths[i], holidayDays[i] );
+            if( x != 0 && x != 6 )
+                numFreeDays ++;
+        }
+    }
+
+    int workDays = daysInMonth[m1 - 1]
+}
+
+int countWorkDays( int y1, int m1, int d1,
+                   int y2, int m2, int d2 ){
+
+
+}
+
 TResult countDays ( int y1, int m1, int d1,
                     int y2, int m2, int d2 )
 {
@@ -108,10 +219,8 @@ TResult countDays ( int y1, int m1, int d1,
     if( !compareInterval(y1, m1, d1, y2, m2, d2) )
         return result;
 
-    for( int i = y1; i <= y2; i ++ ){
-        for( int j = 0;)
-    }
-    result.m_TotalDays = 0;
+
+    result.m_TotalDays = totalDays( y1, m1, d1, y2, m2, d2 );
     result.m_WorkDays = 0;
 
 
