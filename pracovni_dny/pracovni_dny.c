@@ -75,7 +75,7 @@ bool isWorkDay ( int y, int m, int d )
 {
     //printf("Y M D: %d %d %d\n", y, m, d );
     if( !checkDateValidity( y, m, d ) ){
-        printf("Date isn't valid: %d %d %d\n", y, m, d);
+        //printf("Date isn't valid: %d %d %d\n", y, m, d);
         return false;
     }
 
@@ -238,7 +238,7 @@ int countWorkDays( int y1, int m1, int d1,
             }
             continue;
         }
-        for( int j = 0; j <= 12; j++ ){
+        for( int j = 1; j <= 12; j++ ){
             if( i == y2 && j == m2 ){
                 numOfDays += countWD_interval( y2, m2, 1, d2);
                 break;
@@ -263,9 +263,9 @@ TResult countDays ( int y1, int m1, int d1,
 
 
     result.m_TotalDays = totalDays( y1, m1, d1, y2, m2, d2 );
-    printf("Total Days: %d\n", result.m_TotalDays );
+    //printf("Total Days: %d\n", result.m_TotalDays );
     result.m_WorkDays = countWorkDays( y1, m1, d1, y2, m2, d2 );
-    printf("Work Days: %d\n\n", result.m_WorkDays );
+    //printf("Work Days: %d\n\n", result.m_WorkDays );
 
 
     return result;
