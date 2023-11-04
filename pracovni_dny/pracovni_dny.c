@@ -47,7 +47,7 @@ bool checkDateValidity( int y, int m, int d ){
         return true;
     }
 
-    if( d < 0 || d > daysInMonth[m - 1] )
+    if( d <= 0 || d > daysInMonth[m - 1] )
         return false;
     return true;
 }
@@ -120,13 +120,13 @@ int countLeapYears ( int y1, int m1 ){
 int totalDays ( int y1, int m1, int d1,
                 int y2, int m2, int d2 ){
     // sum of first date
-    long long int sum1 = y1 * 365 + d1;
+    int sum1 = y1 * 365 + d1;
     sum1 += countLeapYears( y1, m1 );
     for( int i = 0; i < m1 - 1; i++ )
         sum1 += daysInMonth[i];
 
     // sum of second date
-    long long int sum2 = y2 * 365 + d2;
+    int sum2 = y2 * 365 + d2;
     sum2 += countLeapYears( y2, m2 );
     for( int i = 0; i < m2 - 1; i++ )
         sum2 += daysInMonth[i];
@@ -146,7 +146,7 @@ int countWD_interval( int y1, int m1, int d1, int d2 ){
 // counts number of work days for given month
 int countWorkDaysMonth( int y1, int m1 ){
     int firstDay = calcDayOfWeek( y1, m1, 1 );
-    int numFreeDays, numWorkDays = daysInMonth[m1-1];
+    int numFreeDays = 0, numWorkDays = daysInMonth[m1-1];
     if( isLeap(y1) && numWorkDays == 28 )
         numWorkDays ++;
     switch (firstDay){
