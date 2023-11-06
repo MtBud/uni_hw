@@ -11,6 +11,7 @@ struct result{
 int input( int sequence[] ){
     int i = 0, scanRes;
 
+    printf("Hodnoty:\n");
     while(1){
         if( i == SEQUENCE_MAX )
             return -1;
@@ -30,7 +31,7 @@ int input( int sequence[] ){
 }
 
 // finds all the longest intervals in the sequence
-void findIntervals( int sequence[], struct result results[], int sequenceLen, int* intervalLength, int* numOfResults ){
+void findIntervals( const int sequence[], struct result results[], int sequenceLen, int* intervalLength, int* numOfResults ){
     for( int i = 0; i < sequenceLen - 1; i++ ){
         // end cycle if no longer interval can be found
         if( sequenceLen - i < *intervalLength )
@@ -46,12 +47,13 @@ void findIntervals( int sequence[], struct result results[], int sequenceLen, in
                     *intervalLength = j - i + 1;
                     results[0].start = i;
                     results[0].end = j;
+                    continue;
                 }
                 // add new result if one is found with the same length
                 if( j - i + 1 == *intervalLength ){
                     results[*numOfResults].start = i;
                     results[*numOfResults].end = j;
-                    numOfResults ++;
+                    *numOfResults = *numOfResults + 1;
                 }
             }
         }
