@@ -1,0 +1,3 @@
+Hodnoty:
+6: 0 - 5
+Moznosti: 1
