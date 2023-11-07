@@ -43,7 +43,61 @@ struct DFA {
 
 #endif
 
-DFA determinize(const MISNFA& nfa);
+/**
+ * Function takes care of multiple initial states. If there's only one initial state, it doesn't change anything.
+ * In case of multiple Initial stages, it makes a new one(0).
+ * */
+MISNFA initial_states(const MISNFA& nfa){
+
+    // do nothing if the automata has only one initial state
+    if( nfa.m_InitialStates.size() == 1 )
+        return nfa;
+
+    MISNFA out;
+    map<unsigned int, unsigned int> stateMap;
+    out.m_Alphabet = nfa.m_Alphabet;
+
+    // make a new set of states and map them to the old ones
+    for( unsigned int i = 0; i <= nfa.m_States.size(); i++){
+        out.m_States.insert(i);
+        if(i == 0)
+            continue;
+        stateMap.insert( pair<unsigned int, unsigned int>(*nfa.m_States.find(i-1), i) );
+    }
+
+    // make 0 a new initial state
+    out.m_InitialStates.insert(0);
+
+    // make 0 a final state if any of the original final states are also final
+    for( const auto & element : nfa.m_InitialStates ){
+        if( nfa.m_FinalStates.find(element) != nfa.m_FinalStates.cend() )
+            out.m_FinalStates.insert(0);
+    }
+
+    // rebuild the transitions to match the new state set + add new transitions from the new initial state
+    for( const auto& element : nfa.m_Transitions ){
+        set<State> newSet;
+        for( const auto & element2 : element.second ){
+            newSet.insert(stateMap[element2]);
+        }
+
+        // add the translated transition
+        out.m_Transitions.insert( pair< pair<State, Symbol>, set<State>>(
+                pair<State, Symbol>(stateMap[element.first.first], element.first.second), newSet ) );
+
+        // add new transitions if the state is initial
+        if( nfa.m_InitialStates.find(element.first.first) != nfa.m_InitialStates.cend() ){
+            out.m_Transitions.insert( pair< pair<State, Symbol>, set<State>>(
+                    pair<State, Symbol>(0, element.first.second), newSet ) );
+        }
+    }
+
+    return out;
+}
+
+DFA determinize(const MISNFA& nfa){
+    MISNFA out = initial_states( nfa );
+}
 
 #ifndef __PROGTEST__
 MISNFA in0 = {
@@ -788,8 +842,8 @@ DFA out13 = {
         {1, 2, 3},
 };
 
-int main()
-{
+int main(){
+    assert(determinize(in0) == out0);
     assert(determinize(in1) == out1);
     assert(determinize(in2) == out2);
     assert(determinize(in3) == out3);
