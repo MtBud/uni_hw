@@ -47,7 +47,7 @@ struct DFA {
  * Function takes care of multiple initial states. If there's only one initial state, it doesn't change anything.
  * In case of multiple Initial stages, it makes a new one(0).
  * */
-MISNFA initial_states(const MISNFA& nfa){
+MISNFA initial_states( const MISNFA& nfa ){
 
     // do nothing if the automata has only one initial state
     if( nfa.m_InitialStates.size() == 1 )
@@ -95,30 +95,101 @@ MISNFA initial_states(const MISNFA& nfa){
     return out;
 }
 
-void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable){
-    // add initial state
-    for( auto const& initial : nfa.m_InitialStates ){
-        for( auto const& letter : nfa.m_Alphabet ){
-            stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
-                    nfa.m_InitialStates,
-                    map< Symbol, set<State>>().insert( pair<Symbol, set<State>> )
-                    ))
-        }
+// functions finds all transitions corresponding to a set of states and a symbol from alphabet
+set<State> find_transitions( const set<State>& setStates, const Symbol letter, const MISNFA& nfa ){
+    set<State> out;
+    for( auto const& element : setStates ){
+        if( nfa.m_Transitions.find(pair<State,Symbol>(element, letter) ) == nfa.m_Transitions.cend() )
+            continue;
+
+        for( auto const& element2 : nfa.m_Transitions.at(pair<State,Symbol>(element, letter)) )
+            out.insert(element2);
     }
+    return out;
+}
+
+// adds item into the que if it isn't in the map
+void add_to_que( set<State>& set1, queue< set<State> >& stateSetQue,
+                 const map< set<State>, map< Symbol, set<State>>> & stateTable ){
+    if( stateTable.find(set1) == stateTable.cend() )
+        stateSetQue.push(set1);
+}
+
+void print_table( const map< set<State>, map< Symbol, set<State>>> & stateTable ){
+    cout << "State table size: " << stateTable.size() << endl;
+    for( auto const& element1 : stateTable ){
+        // print the beginning state
+        cout << "{";
+        for( auto const & beginState : element1.first )
+            cout << beginState <<" ";
+        cout << "} ";
+
+        cout << "NumOfColumns: " << element1.second.size() << " ";
+
+        for( auto const& element2 : element1.second ){
+
+            cout << element2.first << " {";
+            for( auto const& element3 : element2.second ){
+                cout << element3 << " ";
+            }
+            cout << "} ";
+        }
+        cout << endl;
+    }
+}
+
+// function constructs a transition table of the determinized automaton saved as 2d map
+void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable){
+    queue< set<State> > stateSetQue;
+
+    // add initial state
+    for( auto const& letter : nfa.m_Alphabet ){
+        set<State> newSet = find_transitions( nfa.m_InitialStates, letter, nfa );
+        if( newSet.empty() )
+            continue;
+        add_to_que( newSet, stateSetQue, stateTable );
+        map< Symbol, set<State>> newTransition;
+        newTransition.insert(pair<Symbol, set<State>>( letter, newSet ));
+        if( stateTable.find(nfa.m_InitialStates) == stateTable.cend() )
+            stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
+                    nfa.m_InitialStates, newTransition ));
+        else
+            stateTable.at(nfa.m_InitialStates).insert(pair<Symbol, set<State>>( letter, newSet ));
+    }
+    print_table( stateTable );
+    cout << endl;
+
+    // go through all the newly created states
+    while( !stateSetQue.empty() ){
+        for( auto const& letter : nfa.m_Alphabet ){
+            set<State> newSet = find_transitions( stateSetQue.front(), letter, nfa );
+            if( newSet.empty() )
+                continue;
+            add_to_que( newSet, stateSetQue, stateTable );
+            map< Symbol, set<State>> newTransition;
+            newTransition.insert(pair<Symbol, set<State>>( letter, newSet ));
+            if( stateTable.find(stateSetQue.front()) == stateTable.cend() )
+                stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
+                        stateSetQue.front(), newTransition ));
+            else
+                stateTable.at(stateSetQue.front()).insert(pair<Symbol, set<State>>( letter, newSet ));
+        }
+
+        stateSetQue.pop();
+    }
+
+    print_table( stateTable );
 }
 
 DFA determinize( const MISNFA& nfa ){
     map< set<State>, map< Symbol, set<State>>> stateTable;
-
-    for( const auto& elementA : nfa.m_Alphabet ){
-        for( const auto& element : )
-       stateTable.insert( pair<set<State>, Symbol>() )
-    }
+    build_state_table( nfa, stateTable );
+    return DFA();
 }
 
 #ifndef __PROGTEST__
 MISNFA in0 = {
-        pair<set<State>, Symbol>{0, 1, 2},
+        {0, 1, 2},
         {'e', 'l'},
         {
          {{0, 'e'}, {1}},
