@@ -95,13 +95,30 @@ MISNFA initial_states(const MISNFA& nfa){
     return out;
 }
 
-DFA determinize(const MISNFA& nfa){
-    MISNFA out = initial_states( nfa );
+void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable){
+    // add initial state
+    for( auto const& initial : nfa.m_InitialStates ){
+        for( auto const& letter : nfa.m_Alphabet ){
+            stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
+                    nfa.m_InitialStates,
+                    map< Symbol, set<State>>().insert( pair<Symbol, set<State>> )
+                    ))
+        }
+    }
+}
+
+DFA determinize( const MISNFA& nfa ){
+    map< set<State>, map< Symbol, set<State>>> stateTable;
+
+    for( const auto& elementA : nfa.m_Alphabet ){
+        for( const auto& element : )
+       stateTable.insert( pair<set<State>, Symbol>() )
+    }
 }
 
 #ifndef __PROGTEST__
 MISNFA in0 = {
-        {0, 1, 2},
+        pair<set<State>, Symbol>{0, 1, 2},
         {'e', 'l'},
         {
          {{0, 'e'}, {1}},
