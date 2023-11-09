@@ -167,16 +167,99 @@ void add_to_que( set<State>& set1, queue< set<State> >& stateSetQue,
         stateSetQue.push(set1);
 }
 
-/*
-void remove_useless_states( const set<State>& iniState, map< set<State>, map< Symbol, set<State>>> & transTable ){
+// algorithm reverses all edges of the graph and bfs's through it. All reachable states are useful and will be saved
+// in the "useful" set.
+void remove_useless_states( const MISNFA& nfa,
+                            map< pair<set<State>, Symbol>, set<State>>& transTable,
+                            set< set<State> >& knownStates){
+    multimap< pair<set<State>, Symbol>, set<State>> reversed;
+    set< set<State> > useful;
+    set< pair<set<State>, Symbol >> useless;
+    set< set<State> > final;
     queue< set<State> > stateSetQ;
-    stateSetQ.push(iniState);
-    while( !stateSetQ.empty() ){
-        for(transTable)
+
+    // reverse the edges and find final states
+    for( auto const& element : transTable ){
+        reversed.insert( pair< pair<set<State>, Symbol>, set<State>>(
+                pair< set<State>, Symbol>(element.second, element.first.second),
+                element.first.first
+        ));
+        if( final.find(element.first.first) == final.cend() ){
+            for( auto const& element2 : element.first.first )
+                if( nfa.m_FinalStates.find(element2) != nfa.m_FinalStates.cend() ){
+                    final.insert(element.first.first);
+                    stateSetQ.push(element.first.first);
+                }
+        }
     }
 
+    cout << "FINAL" << endl;
+    for( const auto& element : final ){
+        cout << "{";
+        for( const auto& element1 : element ){
+            cout << element1 << " ";
+        }
+        cout << "}" << endl;
+    }
+    cout << endl;
+
+    cout << "REVERSED" << endl;
+    for( const auto& element : reversed ){
+
+        cout << "{";
+        for( const auto& element1 : element.first.first ){
+            cout << element1 << " ";
+        }
+        cout << "} " << element.first.second << " {";
+        for( const auto& element1 : element.second ){
+            cout << element1 << " ";
+        }
+        cout << "} " << endl;
+
+    }
+    cout << endl;
+
+
+    while( !stateSetQ.empty() ){
+        for( const auto& letter : nfa.m_Alphabet ){
+            pair< set<State>, Symbol > key = {stateSetQ.front(), letter};
+            auto mmapIter = reversed.find(key);
+            if( mmapIter != reversed.cend() ) {
+                while (mmapIter->first == key) {
+                    if (useful.find(mmapIter->second) == useful.cend()) {
+                        useful.insert(mmapIter->second);
+                        stateSetQ.push(mmapIter->second);
+                    }
+                    mmapIter++;
+                }
+            }
+        }
+        stateSetQ.pop();
+    }
+
+    cout << "USEFUL" << endl;
+    for( const auto& element : useful ){
+        cout << "{";
+        for( const auto& element1 : element ){
+            cout << element1 << " ";
+        }
+        cout << "}" << endl;
+    }
+    cout << endl;
+
+    for( const auto& element : transTable ){
+        if( useful.find(element.first.first) == useful.cend() || useful.find(element.second) == useful.cend() ){
+            useless.insert(element.first);
+        }
+    }
+
+    for( const auto& element : useless )
+        transTable.erase(element);
+
+    knownStates = useful;
+
 }
- */
+
 
 /** Function constructs a transition table of the determinized automaton
  *
@@ -221,8 +304,10 @@ void build_transition_table( const MISNFA& nfa,
         stateSetQue.pop();
     }
 
-    //print_table( transTable );
-    //cout << endl;
+    print_table( transTable );
+    cout << endl;
+    remove_useless_states( nfa, transTable, knownStates );
+
 }
 
 DFA construct_DFA_from_trans_table( const MISNFA& nfa,
