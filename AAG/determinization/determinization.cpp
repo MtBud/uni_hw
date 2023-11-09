@@ -95,6 +95,58 @@ MISNFA initial_states( const MISNFA& nfa ){
     return out;
 }
 
+void print_table( const map< pair<set<State>, Symbol>, set<State>> & transTable ){
+
+    cout << "TABLE" << endl;
+    for( auto const& element1 : transTable ){
+        cout << "{";
+        for( auto const& element2 : element1.first.first ){
+            cout << element2 << " ";
+        }
+        cout << "} " << element1.first.second << " {";
+        for( auto const& element2 : element1.second ){
+            cout << element2 << " ";
+        }
+        cout << "}" << endl;
+
+    }
+}
+
+void print_automaton( const DFA& automaton ){
+    // States
+    cout << "States" << endl << "{";
+    for( const auto& element : automaton.m_States )
+        cout << element << " ";
+    cout << "}" << endl;
+
+    // Alphabet
+    cout << "Alphabet" << endl << "{";
+    for ( const auto& element : automaton.m_Alphabet )
+        cout << element << " ";
+    cout << "}" << endl;
+
+    // Transitions
+    cout << "Transitions" << endl << "{" << endl;
+    for( const auto& element : automaton.m_Transitions ){
+        cout << "{{" << element.first.first << ", " << element.first.second << "}"
+             << ", {" << element.second << "}," << endl;
+    }
+    cout << "}" << endl;
+
+    // Initial State
+    cout << "Initial State" << endl;
+    cout << automaton.m_InitialState << endl;
+
+    // Final States
+    cout << "Final States" << endl << "{";
+    for( const auto& element : automaton.m_FinalStates ){
+        cout << element << " ";
+    }
+    cout << "}" << endl;
+
+    cout << endl << "----------------------------------------------------------" << endl << endl;
+}
+
 // functions finds all transitions corresponding to a set of states and a symbol from alphabet
 set<State> find_transitions( const set<State>& setStates, const Symbol letter, const MISNFA& nfa ){
     set<State> out;
@@ -110,51 +162,44 @@ set<State> find_transitions( const set<State>& setStates, const Symbol letter, c
 
 // adds item into the que if it isn't in the map
 void add_to_que( set<State>& set1, queue< set<State> >& stateSetQue,
-                 const map< set<State>, map< Symbol, set<State>>> & stateTable ){
-    if( stateTable.find(set1) == stateTable.cend() )
+                 const set< set<State>> & knownStates ){
+    if( knownStates.find(set1) == knownStates.cend() )
         stateSetQue.push(set1);
 }
 
-void print_table( const map< set<State>, map< Symbol, set<State>>> & stateTable ){
-
-    cout << "TABLE" << endl;
-    for( auto const& element1 : stateTable ){
-        // print the beginning state
-        cout << "{";
-        for( auto const & beginState : element1.first )
-            cout << beginState <<" ";
-        cout << "} ";
-
-
-        for( auto const& element2 : element1.second ){
-
-            cout << element2.first << " {";
-            for( auto const& element3 : element2.second ){
-                cout << element3 << " ";
-            }
-            cout << "} ";
-        }
-        cout << endl;
+/*
+void remove_useless_states( const set<State>& iniState, map< set<State>, map< Symbol, set<State>>> & transTable ){
+    queue< set<State> > stateSetQ;
+    stateSetQ.push(iniState);
+    while( !stateSetQ.empty() ){
+        for(transTable)
     }
-}
 
-// function constructs a transition table of the determinized automaton saved as 2d map
-void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable ){
+}
+ */
+
+/** Function constructs a transition table of the determinized automaton
+ *
+ * @param nfa
+ * @param transTable
+ * @param knownStates
+ */
+void build_transition_table( const MISNFA& nfa,
+                        map< pair<set<State>, Symbol>, set<State>> & transTable,
+                        set< set<State> >& knownStates ){
     queue< set<State> > stateSetQue;
 
     // add initial state
+    knownStates.insert(nfa.m_InitialStates);
     for( auto const& letter : nfa.m_Alphabet ){
         set<State> newSet = find_transitions( nfa.m_InitialStates, letter, nfa );
         if( newSet.empty() )
             continue;
-        add_to_que( newSet, stateSetQue, stateTable );
-        map< Symbol, set<State>> newTransition;
-        newTransition.insert(pair<Symbol, set<State>>( letter, newSet ));
-        if( stateTable.find(nfa.m_InitialStates) == stateTable.cend() )
-            stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
-                    nfa.m_InitialStates, newTransition ));
-        else
-            stateTable.at(nfa.m_InitialStates).insert(pair<Symbol, set<State>>( letter, newSet ));
+        add_to_que( newSet, stateSetQue, knownStates );
+        transTable.insert( pair< pair<set<State>, Symbol>, set<State>>(
+                pair< set<State>, Symbol>(nfa.m_InitialStates, letter),
+                newSet
+        ));
     }
 
     // go through all the newly created states
@@ -163,60 +208,69 @@ void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<Sta
             set<State> newSet = find_transitions( stateSetQue.front(), letter, nfa );
             if( newSet.empty() )
                 continue;
-            add_to_que( newSet, stateSetQue, stateTable );
-            map< Symbol, set<State>> newTransition;
-            newTransition.insert(pair<Symbol, set<State>>( letter, newSet ));
-            if( stateTable.find(stateSetQue.front()) == stateTable.cend() )
-                stateTable.insert( pair< set<State>, map< Symbol, set<State>>>(
-                        stateSetQue.front(), newTransition ));
-            else
-                stateTable.at(stateSetQue.front()).insert(pair<Symbol, set<State>>( letter, newSet ));
+            add_to_que( newSet, stateSetQue, knownStates );
+            transTable.insert( pair< pair<set<State>, Symbol>, set<State>>(
+                    pair< set<State>, Symbol>(stateSetQue.front(), letter),
+                    newSet
+            ));
+            if( knownStates.find(stateSetQue.front()) == knownStates.cend() )
+                knownStates.insert(stateSetQue.front());
+
         }
 
         stateSetQue.pop();
     }
 
-    print_table( stateTable );
-    cout << endl;
+    //print_table( transTable );
+    //cout << endl;
 }
 
-DFA construct_DFA_from_state_table( const MISNFA& nfa,
-                                    const map< set<State>, map< Symbol, set<State>>> & stateTable ){
+DFA construct_DFA_from_trans_table( const MISNFA& nfa,
+                                    const map< pair<set<State>, Symbol>, set<State>> & transTable,
+                                    const set< set<State>>& knownStates ){
     DFA out;
     out.m_Alphabet = nfa.m_Alphabet;
     map< set<State>, State > renamed;
     State newName = 0;
-    for( const auto& element : stateTable ){
-        renamed.insert(pair< set<State>, State>(element.first, newName));
+
+    // make a map of the new renamed states
+    for( const auto& element : knownStates ){
+        renamed.insert(pair< set<State>, State>(element, newName));
         out.m_States.insert(newName);
         newName++;
     }
 
-    for( const auto& element : stateTable ){
-        if( element.first == nfa.m_InitialStates ){
-            out.m_InitialState = renamed[element.first];
+    // fill in the new transition table
+    for( const auto& element : transTable ){
+        // add initial state when found
+        if( element.first.first == nfa.m_InitialStates ){
+            out.m_InitialState = renamed[element.first.first];
         }
-        for( const auto& findEnd : element.first ){
+        // make state final if one of its parts is a final state
+        for( const auto& findEnd : element.first.first ){
             if( nfa.m_FinalStates.find(findEnd) != nfa.m_FinalStates.cend() ){
-                out.m_FinalStates.insert(renamed[element.first]);
+                out.m_FinalStates.insert(renamed[element.first.first]);
                 break;
             }
         }
-        for( const auto& element2 : element.second ){
-            out.m_Transitions.insert( pair<pair<State, Symbol>, State>(
-                    pair<State, Symbol>(renamed[element.first], element2.first),
-                            renamed[element2.second]));
-        }
+        out.m_Transitions.insert( pair< pair<State, Symbol>, State>(
+                pair< State, Symbol>(renamed[element.first.first], element.first.second),
+                renamed[element.second]
+        ));
+
 
     }
 
+
+    print_automaton( out );
     return out;
 }
 
 DFA determinize( const MISNFA& nfa ){
-    map< set<State>, map< Symbol, set<State>>> stateTable;
-    build_state_table( nfa, stateTable );
-    return construct_DFA_from_state_table( nfa, stateTable );
+    map< pair<set<State>, Symbol>, set<State> > transTable;
+    set< set<State> > knownStates;
+    build_transition_table( nfa, transTable, knownStates );
+    return construct_DFA_from_trans_table( nfa, transTable, knownStates );
 }
 
 #ifndef __PROGTEST__
