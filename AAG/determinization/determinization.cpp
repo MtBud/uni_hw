@@ -116,7 +116,8 @@ void add_to_que( set<State>& set1, queue< set<State> >& stateSetQue,
 }
 
 void print_table( const map< set<State>, map< Symbol, set<State>>> & stateTable ){
-    cout << "State table size: " << stateTable.size() << endl;
+
+    cout << "TABLE" << endl;
     for( auto const& element1 : stateTable ){
         // print the beginning state
         cout << "{";
@@ -124,7 +125,6 @@ void print_table( const map< set<State>, map< Symbol, set<State>>> & stateTable 
             cout << beginState <<" ";
         cout << "} ";
 
-        cout << "NumOfColumns: " << element1.second.size() << " ";
 
         for( auto const& element2 : element1.second ){
 
@@ -139,7 +139,7 @@ void print_table( const map< set<State>, map< Symbol, set<State>>> & stateTable 
 }
 
 // function constructs a transition table of the determinized automaton saved as 2d map
-void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable){
+void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<State>>> & stateTable ){
     queue< set<State> > stateSetQue;
 
     // add initial state
@@ -156,8 +156,6 @@ void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<Sta
         else
             stateTable.at(nfa.m_InitialStates).insert(pair<Symbol, set<State>>( letter, newSet ));
     }
-    print_table( stateTable );
-    cout << endl;
 
     // go through all the newly created states
     while( !stateSetQue.empty() ){
@@ -179,12 +177,46 @@ void build_state_table( const MISNFA& nfa, map< set<State>, map< Symbol, set<Sta
     }
 
     print_table( stateTable );
+    cout << endl;
+}
+
+DFA construct_DFA_from_state_table( const MISNFA& nfa,
+                                    const map< set<State>, map< Symbol, set<State>>> & stateTable ){
+    DFA out;
+    out.m_Alphabet = nfa.m_Alphabet;
+    map< set<State>, State > renamed;
+    State newName = 0;
+    for( const auto& element : stateTable ){
+        renamed.insert(pair< set<State>, State>(element.first, newName));
+        out.m_States.insert(newName);
+        newName++;
+    }
+
+    for( const auto& element : stateTable ){
+        if( element.first == nfa.m_InitialStates ){
+            out.m_InitialState = renamed[element.first];
+        }
+        for( const auto& findEnd : element.first ){
+            if( nfa.m_FinalStates.find(findEnd) != nfa.m_FinalStates.cend() ){
+                out.m_FinalStates.insert(renamed[element.first]);
+                break;
+            }
+        }
+        for( const auto& element2 : element.second ){
+            out.m_Transitions.insert( pair<pair<State, Symbol>, State>(
+                    pair<State, Symbol>(renamed[element.first], element2.first),
+                            renamed[element2.second]));
+        }
+
+    }
+
+    return out;
 }
 
 DFA determinize( const MISNFA& nfa ){
     map< set<State>, map< Symbol, set<State>>> stateTable;
     build_state_table( nfa, stateTable );
-    return DFA();
+    return construct_DFA_from_state_table( nfa, stateTable );
 }
 
 #ifndef __PROGTEST__
