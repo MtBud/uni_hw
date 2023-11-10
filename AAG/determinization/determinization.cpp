@@ -43,58 +43,6 @@ struct DFA {
 
 #endif
 
-/**
- * Function takes care of multiple initial states. If there's only one initial state, it doesn't change anything.
- * In case of multiple Initial stages, it makes a new one(0).
- * */
-MISNFA initial_states( const MISNFA& nfa ){
-
-    // do nothing if the automata has only one initial state
-    if( nfa.m_InitialStates.size() == 1 )
-        return nfa;
-
-    MISNFA out;
-    map<unsigned int, unsigned int> stateMap;
-    out.m_Alphabet = nfa.m_Alphabet;
-
-    // make a new set of states and map them to the old ones
-    for( unsigned int i = 0; i <= nfa.m_States.size(); i++){
-        out.m_States.insert(i);
-        if(i == 0)
-            continue;
-        stateMap.insert( pair<unsigned int, unsigned int>(*nfa.m_States.find(i-1), i) );
-    }
-
-    // make 0 a new initial state
-    out.m_InitialStates.insert(0);
-
-    // make 0 a final state if any of the original final states are also final
-    for( const auto & element : nfa.m_InitialStates ){
-        if( nfa.m_FinalStates.find(element) != nfa.m_FinalStates.cend() )
-            out.m_FinalStates.insert(0);
-    }
-
-    // rebuild the transitions to match the new state set + add new transitions from the new initial state
-    for( const auto& element : nfa.m_Transitions ){
-        set<State> newSet;
-        for( const auto & element2 : element.second ){
-            newSet.insert(stateMap[element2]);
-        }
-
-        // add the translated transition
-        out.m_Transitions.insert( pair< pair<State, Symbol>, set<State>>(
-                pair<State, Symbol>(stateMap[element.first.first], element.first.second), newSet ) );
-
-        // add new transitions if the state is initial
-        if( nfa.m_InitialStates.find(element.first.first) != nfa.m_InitialStates.cend() ){
-            out.m_Transitions.insert( pair< pair<State, Symbol>, set<State>>(
-                    pair<State, Symbol>(0, element.first.second), newSet ) );
-        }
-    }
-
-    return out;
-}
-
 void print_table( const map< pair<set<State>, Symbol>, set<State>> & transTable ){
 
     cout << "TABLE" << endl;
@@ -147,7 +95,7 @@ void print_automaton( const DFA& automaton ){
     cout << endl << "----------------------------------------------------------" << endl << endl;
 }
 
-void print_unisgned_set( const set<State>& setPrint ){
+void print_unsigned_set( const set<State>& setPrint ){
     cout << "{";
     for( const auto& element1 : setPrint ){
         cout << element1 << " ";
@@ -168,12 +116,14 @@ set<State> find_transitions( const set<State>& setStates, const Symbol letter, c
     return out;
 }
 
-// adds item into the que if it isn't in the map
+// adds item into the que if it isn't in the transition table
 void add_to_que( set<State>& set1, queue< set<State> >& stateSetQue,
                  const set< set<State>> & knownStates ){
     if( knownStates.find(set1) == knownStates.cend() )
         stateSetQue.push(set1);
 }
+
+
 /**
  algorithm reverses all edges of the graph and bfs's through it. All reachable states are useful and will be saved
  in the "useful" set.
@@ -196,7 +146,6 @@ void remove_useless_states( const MISNFA& nfa,
         ));
         if( final.find(element.first.first) == final.cend() || final.find(element.second) == final.cend()){
             for( auto const& element2 : element.first.first ){
-                //cout << "FIN LOOP " << element2 << endl;
                 if( nfa.m_FinalStates.find(element2) != nfa.m_FinalStates.cend() ){
                     final.insert(element.first.first);
                     useful.insert(element.first.first);
@@ -204,7 +153,6 @@ void remove_useless_states( const MISNFA& nfa,
                 }
             }
             for( auto const& element2 : element.second ){
-                //cout << "FIN LOOP " << element2 << endl;
                 if( nfa.m_FinalStates.find(element2) != nfa.m_FinalStates.cend() ){
                     final.insert(element.second);
                     useful.insert(element.second);
@@ -214,24 +162,11 @@ void remove_useless_states( const MISNFA& nfa,
         }
     }
 
-    cout << "FINAL" << endl;
-    for( const auto& element : final ){
-        print_unisgned_set(element);
-    }
-    cout << endl << endl;
+    // if there are no final states, language is empty -> handle the exception in construct_DFA_...
+    if( final.empty() )
+        return;
 
-    cout << "REVERSED" << endl;
-    for( const auto& element : reversed ){
-        print_unisgned_set(element.first.first);
-        cout << element.first.second << " ";
-        print_unisgned_set(element.second);
-        cout << " " << endl;
-    }
-    cout << endl << endl;
-
-    if( stateSetQ.empty() )
-        cout << "QUE IS EMPTY" << endl;
-
+    // bfs through the newly created graph
     while( !stateSetQ.empty() ){
         for( const auto& letter : nfa.m_Alphabet ){
             pair< set<State>, Symbol > key = {stateSetQ.front(), letter};
@@ -249,20 +184,14 @@ void remove_useless_states( const MISNFA& nfa,
         stateSetQ.pop();
     }
 
-    cout << endl;
-    cout << "USEFUL" << endl;
-    for( const auto& element : useful ){
-        print_unisgned_set( element );
-        cout << " ";
-    }
-    cout << endl << endl;
-
+    // identify the useless states
     for( const auto& element : transTable ){
         if( useful.find(element.first.first) == useful.cend() || useful.find(element.second) == useful.cend() ){
             useless.insert(element.first);
         }
     }
 
+    // erase useless transitions from the table
     for( const auto& element : useless )
         transTable.erase(element);
 
@@ -316,12 +245,20 @@ void build_transition_table( const MISNFA& nfa,
         stateSetQue.pop();
     }
 
-    print_table( transTable );
-    cout << endl;
+    //print_table( transTable );
     remove_useless_states( nfa, transTable, knownStates, finalStates );
 
 }
 
+/**
+ * Function takes in the newly constructed transition table + other additional info about states
+ * and constructs the DFA automaton object.
+ * @param nfa
+ * @param transTable
+ * @param knownStates
+ * @param finalStates
+ * @return
+ */
 DFA construct_DFA_from_trans_table( const MISNFA& nfa,
                                     const map< pair<set<State>, Symbol>, set<State>> & transTable,
                                     const set< set<State>>& knownStates,
@@ -330,6 +267,12 @@ DFA construct_DFA_from_trans_table( const MISNFA& nfa,
     out.m_Alphabet = nfa.m_Alphabet;
     map< set<State>, State > renamed;
     State newName = 0;
+
+    // empty language exception
+    if( finalStates.empty() ){
+        out.m_States.insert(0);
+        return out;
+    }
 
     // make a map of the new renamed states
     for( const auto& element : knownStates ){
@@ -357,11 +300,15 @@ DFA construct_DFA_from_trans_table( const MISNFA& nfa,
 
     }
 
-
-    print_automaton( out );
+    //print_automaton( out );
     return out;
 }
 
+/**
+ * Function takes in a nondeterminized automaton and determinizes it.
+ * @param nfa
+ * @return
+ */
 DFA determinize( const MISNFA& nfa ){
     map< pair<set<State>, Symbol>, set<State> > transTable;
     set< set<State> > knownStates;
