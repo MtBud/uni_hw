@@ -269,9 +269,17 @@ DFA construct_DFA_from_trans_table( const MISNFA& nfa,
     State newName = 0;
 
     // empty language exception
-    if( finalStates.empty() ){
+    if( finalStates.empty() || transTable.empty() ){
         out.m_States.insert(0);
         out.m_InitialState = 0;
+
+        // only accepts empty strings exception
+        for( const auto& element : nfa.m_InitialStates ){
+            if( nfa.m_FinalStates.find(element) != nfa.m_FinalStates.cend() ){
+                out.m_FinalStates.insert(0);
+            }
+        }
+        // print_automaton( out );
         return out;
     }
 
@@ -320,7 +328,7 @@ DFA determinize( const MISNFA& nfa ){
 }
 
 #ifndef __PROGTEST__
-MISNFA inCus0 = {
+MISNFA inEdge0 = {
         {0},
         {'a', 'b'},
         {},
@@ -328,12 +336,31 @@ MISNFA inCus0 = {
         {},
 };
 
-DFA outCus0 = {
+DFA outEdge0 = {
         {0},
         {'a', 'b'},
         {},
         0,
         {},
+};
+
+MISNFA inEdge1 = {
+        {0, 1},
+        {'a', 'b'},
+        {
+                {{1, 'a'}, {0}},
+                {{1, 'b'}, {1}},
+        },
+        {0},
+        {0, 1},
+};
+
+DFA outEdge1 = {
+        {0},
+        {'a', 'b'},
+        {},
+        0,
+        {0},
 };
 
 MISNFA in0 = {
@@ -1079,7 +1106,8 @@ DFA out13 = {
 };
 
 int main(){
-    assert(determinize(inCus0) == outCus0);
+    assert(determinize(inEdge0) == outEdge0);
+    assert(determinize(inEdge1) == outEdge1);
     assert(determinize(in0) == out0);
     assert(determinize(in1) == out1);
     assert(determinize(in2) == out2);
