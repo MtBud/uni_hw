@@ -21,9 +21,9 @@ module processor( input         clk, reset,
 	
 
 	// declare main cpu components
-	PC_reg PCReg1 (PCn, clk, PC);
+	PC_reg PCReg1 (PCn, clk, reset, PC);
 	register_file registerFile1(instruction[19:15], instruction[24:20], instruction[11:7],
-								 clk, RegWrite, res, rs1, rs2 );
+								 clk, RegWrite, reset, res, rs1, rs2 );
 
 	imm_control immDecoder1(instruction[31:7], immControl, ImmOp);
 
@@ -63,13 +63,17 @@ module processor( input         clk, reset,
 endmodule
 
 module PC_reg(  input [31:0] PCn,
-				input clk,
+				input clk, reset,
 			    output [31:0] PC
 			);
 	reg [31:0] PCregister;
 
 	assign PC = PCregister;
-	always @ (posedge clk) PCregister = PCn;
+	always @ (posedge clk) begin
+		PCregister = PCn;
+		if (reset) PCregister = 0;
+	end
+		
 	
 endmodule
 
@@ -90,17 +94,19 @@ endmodule
 	 
 
 module register_file( input [4:0] a1, a2, a3,
-		      input clk, we3,
+		      input clk, we3, reset,
 		      input [31:0] wd3,
-		      output reg [31:0] rd1, rd2
+		      output [31:0] rd1, rd2
 		    );  
 	reg [31:0] rf[31:0];
-	always @(*) begin
-		rd1 = rf[a1];
-		rd2 = rf[a2];
-	end
+	
+	always @ (reset) rf[0] = 0;
+
+	assign rd1 = rf[a1];
+	assign rd2 = rf[a2];
+	
 	always @ (posedge clk) begin
-		if(we3) rf[a3] = wd3;
+		if(we3 && a3 != 0) rf[a3] = wd3;
 	end		
 endmodule
 
@@ -113,7 +119,7 @@ module imm_control( input [24:0] instruction,
 		case(immControl)
 			// I-type
 			0:begin
-				out[10:0] = instruction[23:12];
+				out[10:0] = instruction[23:13];
 				out[31:11] = instruction[24];
 			  end
 			// S-type  
@@ -133,7 +139,7 @@ module imm_control( input [24:0] instruction,
 			// U-type
 			3:begin
 				out[11:0] = 0;
-				out[31:12] = instruction[24:5] * 4096;
+				out[31:12] = instruction[24:5];
 			  end
 			// J-type
 			4:begin

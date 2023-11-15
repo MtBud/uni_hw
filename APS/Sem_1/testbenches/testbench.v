@@ -7,7 +7,7 @@ module testbench();
 	top simulated_system (clk, reset, data_to_mem, address_to_mem, write_enable);
 
 	initial	begin
-		$dumpfile("test");
+		$dumpfile("tb_asm_alu");
 		$dumpvars;
 		reset<=1; # 2; reset<=0;
 		#100;
