@@ -8,16 +8,17 @@ module processor( input         clk, reset,
                   input  [31:0] data_from_mem
                 );
 	// declare wiring			
-    wire [31:0] rs1, rs2, ALUOut, ImmOp, SrcB, BranchTarget, BrTargetSrc, PCn, PCPlus4, res BrJalxMuxOut;
-	wire BranchBeq, BranchSlt, BranchJal, BranchJalr, BranchAuiPC,
+    wire [31:0] rs1, rs2, ALUOut, ImmOp, srcB, BranchTarget, BrTargetSrc, PCn, PCPlus4, res, BrJalxMuxOut;
+	wire BranchBeq, BranchBlt, BranchJal, BranchJalr, BranchAuiPC,
 		 RegWrite, MemWrite,
 		 Zero, Lst,
 		 BranchOutcome, ALUSrc, BrTargetSelect, BranchJalx, MemToReg;
 	wire [3:0] immControl, ALUControl;
 
-	WE = MemWrite;
-	data_to_mem = rs2;
-	address_to_mem = ALUOut;	 
+	assign WE = MemWrite;
+	assign data_to_mem = rs2;
+	assign address_to_mem = ALUOut; 	 
+	
 
 	// declare main cpu components
 	PC_reg PCReg1 (PCn, clk, PC);
@@ -44,7 +45,7 @@ module processor( input         clk, reset,
 
 	// declare multiplexors
 	mux_2_1 mux_BrOutcome (PCPlus4, BranchTarget, BranchOutcome, PCn);
-	mux_2_1 mux_ALUSrc (rs2, immOp, ALUSrc, SrcB);
+	mux_2_1 mux_ALUSrc (rs2, ImmOp, ALUSrc, srcB);
 	mux_2_1 mux_BrTarget (BrTargetSrc, ALUOut, BrTargetSelect, BranchTarget);
 	mux_2_1 mux_BrJalx (ALUOut, PCPlus4, BranchJalx, BrJalxMuxOut);
 	mux_2_1 mux_MemToReg (BrJalxMuxOut, data_from_mem, MemToReg, res);
@@ -54,11 +55,10 @@ module processor( input         clk, reset,
 	adder_32bit adder_PCImm (ImmOp, PC, BrTargetSrc);
 
 	// adittional logic gates for resolving branching
-	always @(*) begin
-		BranchJalx = BranchJal || BranchJalr;
-		BrTargetSelect = BranchJalr || BranchAuiPC;
-		BranchOutcome = BranchJalx || BrTargetSelect || (BranchBeq && Zero) || (BranchBlt && Lst);
-	end
+	assign BranchJalx = BranchJal || BranchJalr;
+	assign BrTargetSelect = BranchJalr || BranchAuiPC;
+	assign BranchOutcome = BranchJalx || BrTargetSelect || (BranchBeq && Zero) || (BranchBlt && Lst);
+	
 
 endmodule
 
@@ -66,8 +66,11 @@ module PC_reg(  input [31:0] PCn,
 				input clk,
 			    output [31:0] PC
 			);
-	always @ (posedge clk) 
-		PC = PCn;
+	reg [31:0] PCregister;
+
+	assign PC = PCregister;
+	always @ (posedge clk) PCregister = PCn;
+	
 endmodule
 
 module adder_32bit( input [31:0] num1, num2,
@@ -104,7 +107,7 @@ endmodule
 // I - 0, S - 1, B - 2, U - 3 (upper immediate), J - 4
 module imm_control( input [24:0] instruction,
 		    input [3:0] immControl,
-		    output [31:0] out
+		    output reg [31:0] out
 		  );
 	always @(*) begin
 		case(immControl)
@@ -139,7 +142,6 @@ module imm_control( input [24:0] instruction,
 				out[11] = instruction[11];
 				out[19:12] = instruction[10:5];
 				out[31:20] = instruction[24];
-			  end
 
 			end
 
@@ -151,8 +153,8 @@ endmodule
 // add - 0, and - 1, sub - 2, slt - 3, div - 4, rem - 5, sll - 6, srl - 7, sra - 8, lui - 9
 module ALU( input [31:0] srcA, srcB,
 	    input [3:0] ALUControl,
-	    output Zero, LesserThan,
-	    output [31:0] ALUOut
+	    output reg Zero, LesserThan,
+	    output reg [31:0] ALUOut
 	  );
 	always @(*) begin
 		case(ALUControl)
@@ -185,7 +187,7 @@ endmodule
 
 
 module control_unit( input [31:0] instruction,
-		     output BranchBeq,
+		     output reg BranchBeq,
 		     	    BranchBlt,
 		     	    BranchJal,
 		     	    BranchJalr,
@@ -193,9 +195,9 @@ module control_unit( input [31:0] instruction,
 		     	    RegWrite,
 		     	    MemToReg,
 		     	    MemWrite,
-		     output [3:0] AlUControl,
-		     output ALUSrc,
-		     output [3:0] immControl,
+		     output reg [3:0] ALUControl,
+		     output reg ALUSrc,
+		     output reg [3:0] immControl
 		   );
 	always @(*) begin
 		case(instruction[6:0])
