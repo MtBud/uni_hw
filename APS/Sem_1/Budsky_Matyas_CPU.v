@@ -44,7 +44,7 @@ module register_file( input [4:0] a1, a2, a3,
 	end		
 endmodule
 
-// I - 0, S - 1, B - 2, U - 3, J - 4
+// I - 0, S - 1, B - 2, U - 3 (upper immediate), J - 4
 module imm_control( input [24:0] instruction,
 		    input [3:0] immControl,
 		    output [31:0] out
@@ -73,7 +73,7 @@ module imm_control( input [24:0] instruction,
 			// U-type
 			3:begin
 				out[11:0] = 0;
-				out[31:12] = instruction[24:5];
+				out[31:12] = instruction[24:5] * 4096;
 			  end
 			// J-type
 			4:begin
@@ -83,6 +83,9 @@ module imm_control( input [24:0] instruction,
 				out[19:12] = instruction[10:5];
 				out[31:20] = instruction[24];
 			  end
+
+			end
+
 		endcase
 	end
 		  
@@ -112,7 +115,7 @@ module ALU( input [31:0] srcA, srcB,
 			6: ALUOut = srcA << srcB;
 			7: ALUOut = srcA >> srcB;
 			8: ALUOut = srcA >>> srcB;
-			9: ALUOut = srcB * 4096;
+			9: ALUOut = srcB;
 		endcase
 	end
 	
@@ -129,6 +132,7 @@ module control_unit( input [31:0] instruction,
 		     	    BranchBlt,
 		     	    BranchJal,
 		     	    BranchJalr,
+					BranchAuiPC,
 		     	    RegWrite,
 		     	    MemToReg,
 		     	    MemWrite,
@@ -144,6 +148,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 0;
 				BranchJalr = 0;
+				BranchAuiPC = 0;
 				RegWrite = 1;
 				MemToReg = 0;
 				MemWrite = 0;
@@ -184,11 +189,12 @@ module control_unit( input [31:0] instruction,
 			19:begin
 				BranchBeq = 0;
 				BranchBlt = 0;
-		     	    	BranchJal = 0;
-		     	    	BranchJalr = 0;
-		     	    	RegWrite = 1;
-		     	    	MemToReg = 0;
-		     	    	MemWrite = 0;
+				BranchAuiPC = 0;
+     	    	BranchJal = 0;
+     	    	BranchJalr = 0;
+     	    	RegWrite = 1;
+		     	MemToReg = 0;
+		     	MemWrite = 0;
 				ALUControl = 0;
 				immControl = 0;
 				ALUSrc = 1;
@@ -198,6 +204,7 @@ module control_unit( input [31:0] instruction,
 			99:begin
 				BranchJal = 0;
 				BranchJalr = 0;
+				BranchAuiPC = 0;				
 				RegWrite = 0;
 				MemToReg = 0;
 				MemWrite = 0;
@@ -226,6 +233,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 0;
 				BranchJalr = 0;
+				BranchAuiPC = 0;
 				RegWrite = 1;
 				MemToReg = 1;
 				MemWrite = 0;
@@ -240,6 +248,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 0;
 				BranchJalr = 0;
+				BranchAuiPC = 0;
 				RegWrite = 0;
 				MemToReg = 0;
 				MemWrite = 1;
@@ -254,6 +263,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 0;
 				BranchJalr = 0;
+				BranchAuiPC = 0;
 				RegWrite = 1;
 				MemToReg = 0;
 				MemWrite = 0;
@@ -268,6 +278,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 1;
 				BranchJalr = 0;
+				BranchAuiPC = 0;
 				RegWrite = 1;
 				MemToReg = 0;
 				MemWrite = 0;
@@ -280,6 +291,7 @@ module control_unit( input [31:0] instruction,
 				BranchBlt = 0;
 				BranchJal = 0;
 				BranchJalr = 1;
+				BranchAuiPC = 0;
 				RegWrite = 1;
 				MemToReg = 0;
 				MemWrite = 0;
@@ -293,11 +305,11 @@ module control_unit( input [31:0] instruction,
 				BranchBeq = 0;
 				BranchBlt = 0;
 				BranchJal = 0;
-				BranchJalr = 1;
-				RegWrite = 1;
+				BranchJalr = 0;
+				BranchAuiPC = 1;
+				RegWrite = 0;
 				MemToReg = 0;
 				MemWrite = 0;
-				ALUControl = 9;
 				immControl = 3;
 				ALUSrc = 1;
 			end
