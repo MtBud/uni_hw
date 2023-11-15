@@ -7,11 +7,68 @@ module processor( input         clk, reset,
                   output [31:0] data_to_mem,
                   input  [31:0] data_from_mem
                 );
-    //... write your code here ...
+	// declare wiring			
+    wire [31:0] rs1, rs2, ALUOut, ImmOp, SrcB, BranchTarget, BrTargetSrc, PCn, PCPlus4, res BrJalxMuxOut;
+	wire BranchBeq, BranchSlt, BranchJal, BranchJalr, BranchAuiPC,
+		 RegWrite, MemWrite,
+		 Zero, Lst,
+		 BranchOutcome, ALUSrc, BrTargetSelect, BranchJalx, MemToReg;
+	wire [3:0] immControl, ALUControl;
+
+	WE = MemWrite;
+	data_to_mem = rs2;
+	address_to_mem = ALUOut;	 
+
+	// declare main cpu components
+	PC_reg PCReg1 (PCn, clk, PC);
+	register_file registerFile1(instruction[19:15], instruction[24:20], instruction[11:7],
+								 clk, RegWrite, res, rs1, rs2 );
+
+	imm_control immDecoder1(instruction[31:7], immControl, ImmOp);
+
+	ALU ALU1(rs1, srcB, ALUControl, Zero, Lst, ALUOut);
+
+	control_unit controlUnit1( 
+					instruction,
+					BranchBeq,
+		     	    BranchBlt,
+		     	    BranchJal,
+		     	    BranchJalr,
+					BranchAuiPC,
+		     	    RegWrite,
+		     	    MemToReg,
+		     	    MemWrite,
+					ALUControl,
+					ALUSrc,
+					immControl);
+
+	// declare multiplexors
+	mux_2_1 mux_BrOutcome (PCPlus4, BranchTarget, BranchOutcome, PCn);
+	mux_2_1 mux_ALUSrc (rs2, immOp, ALUSrc, SrcB);
+	mux_2_1 mux_BrTarget (BrTargetSrc, ALUOut, BrTargetSelect, BranchTarget);
+	mux_2_1 mux_BrJalx (ALUOut, PCPlus4, BranchJalx, BrJalxMuxOut);
+	mux_2_1 mux_MemToReg (BrJalxMuxOut, data_from_mem, MemToReg, res);
+
+	// declare adders
+	adder_32bit adder_PC4 (4, PC, PCPlus4);
+	adder_32bit adder_PCImm (ImmOp, PC, BrTargetSrc);
+
+	// adittional logic gates for resolving branching
+	always @(*) begin
+		BranchJalx = BranchJal || BranchJalr;
+		BrTargetSelect = BranchJalr || BranchAuiPC;
+		BranchOutcome = BranchJalx || BrTargetSelect || (BranchBeq && Zero) || (BranchBlt && Lst);
+	end
+
 endmodule
 
-//... add new modules here ...
-
+module PC_reg(  input [31:0] PCn,
+				input clk,
+			    output [31:0] PC
+			);
+	always @ (posedge clk) 
+		PC = PCn;
+endmodule
 
 module adder_32bit( input [31:0] num1, num2,
 	      	    output [31:0] sum
