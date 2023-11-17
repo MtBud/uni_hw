@@ -31,9 +31,9 @@ endmodule
 module inst_mem (input  [5:0]  address,
 		 output [31:0] rd);
 
-	reg [31:0] RAM[63:0];
+	reg [31:0] RAM[127:0];
 	initial begin
-		$readmemh ("memfile_inst.hex",RAM,0,63);
+		$readmemh ("memfile_inst.hex",RAM,0,127);
 	end
 	assign rd=RAM[address]; // word aligned
 endmodule
