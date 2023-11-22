@@ -18,6 +18,8 @@ struct revArr{
     struct review* reviews;
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+
 bool isLeap( int y ){
     if( y % 4000 == 0 )
         return false;
@@ -51,6 +53,8 @@ void reallocate( struct revArr* revArr_i ){
     revArr_i->reviews = realloc(&revArr_i->reviews, sizeof(struct review) * revArr_i->max );
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 int input( char* requestType, int* sum , struct revArr* revArr_i ){
     // get the type of request
     if( scanf(" %c", requestType) != 1 )
@@ -58,6 +62,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
 
     // get sum if the request is a query
     if( *requestType == '#' || *requestType == '?' ){
+        if( revArr_i->size == 0 )
+            return 1;
         if( scanf("%d", sum) != 1 )
             return 1;
         if( sum <= 0 )
@@ -100,6 +106,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
     return 0;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 int main(){
     char requestType;
     int sum;
@@ -109,5 +117,6 @@ int main(){
         printf("Nespravny vstup.\n");
         return 1;
     }
+
     return 0;
 }
