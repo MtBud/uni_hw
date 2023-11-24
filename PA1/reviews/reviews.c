@@ -4,18 +4,27 @@
 
 const int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+// symbolizes one review
 struct review{
-    int year;
+    int date;
     int score;
-    int month;
-    int day;
     char text[4097];
 };
 
+// takes care of the whole array of reviews
 struct revArr{
+    struct review* reviews;
     int size;
     int max;
-    struct review* reviews;
+};
+
+// is used as output of the searching algorithm
+// start and end are the pointers to the start and end of the interval, sum is the total
+struct answer{
+    struct review* start;
+    struct review* end;
+    int sum;
+    int diff;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -48,17 +57,21 @@ bool checkDateValidity( int y, int m, int d ){
     return true;
 }
 
+// reallocates the reviews array
 void reallocate( struct revArr* revArr_i ){
     revArr_i->max = revArr_i->max * 1.5;
-    revArr_i->reviews = realloc(&revArr_i->reviews, sizeof(struct review) * revArr_i->max );
+    revArr_i->reviews = (struct review*) realloc(&revArr_i->reviews, sizeof(struct review) * revArr_i->max );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/**
+ * Function takes care of input sanitization. It also fills in the information into the reviews array.
+ * */
 int input( char* requestType, int* sum , struct revArr* revArr_i ){
-    // get the type of request
-    if( scanf(" %c", requestType) != 1 )
-        return 1;
+    // get the type of request, end program if end of input is detected
+    if( scanf(" %c", requestType) == EOF )
+        return -1;
 
     // get sum if the request is a query
     if( *requestType == '#' || *requestType == '?' ){
@@ -66,7 +79,7 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
             return 1;
         if( scanf("%d", sum) != 1 )
             return 1;
-        if( sum <= 0 )
+        if( *sum <= 0 )
             return 1;
         return 0;
     }
@@ -76,8 +89,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
         return 1;
     struct review newEntry;
 
-
-    if( scanf( "%d-%d-%d", &newEntry.year, &newEntry.month, &newEntry.day ) != 3 )
+    int year, month, day;
+    if( scanf( "%d-%d-%d", &year, &month, &day ) != 3 )
         return 1;
     if( scanf("%d", &newEntry.score) != 1 )
         return 1;
@@ -85,19 +98,13 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
         return 1;
 
     // check if the date is valid and more or equal than the previous one
-    if( !checkDateValidity( newEntry.year, newEntry.month, newEntry.day) )
+    if( !checkDateValidity( year, month, day) )
         return 1;
-    if( revArr_i->reviews[revArr_i->size].year < newEntry.year )
-        return 1;
-    if( revArr_i->reviews[revArr_i->size].year == newEntry.year &&
-        revArr_i->reviews[revArr_i->size].month < newEntry.month)
-        return 1;
-    if( revArr_i->reviews[revArr_i->size].year == newEntry.year &&
-        revArr_i->reviews[revArr_i->size].month == newEntry.month &&
-        revArr_i->reviews[revArr_i->size].day < newEntry.day )
+    newEntry.date = year*10000 + month * 100 + day;
+    if( revArr_i->size > 0 && revArr_i->reviews[revArr_i->size-1].date > newEntry.date )
         return 1;
 
-    // if it passes all the tests, the new entry is added to the all encompasing array
+    // if it passes all the tests, the new entry is added to the all encompassing array
     if( revArr_i->max == revArr_i->size )
         reallocate( revArr_i );
     revArr_i->size ++;
@@ -108,15 +115,123 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/**
+ * Add days until the difference between the desired sum and the current sum starts getting bigger.
+ * Subtract days until the difference starts getting bigger.
+ * Repeat until the best fit is found.
+ * */
+struct answer search( int reqSum, struct revArr* revArr_i ){
+    struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
+    int iteratorEnd = 0, iteratorStart = 0, currSum = 0;
+
+    while( true ){
+
+        // adding new days
+        while( true ){
+            // adding all the entries of the same day
+            while( true ){
+                currSum += revArr_i->reviews[iteratorEnd].score;
+                if( iteratorEnd+1 == revArr_i->size )
+                    break;
+                if( revArr_i->reviews[iteratorEnd].date != revArr_i->reviews[iteratorEnd+1].date )
+                    break;
+                iteratorEnd ++;
+            }
+
+            // initialize the structure if it's the first loop
+            // or update the structure if better entry is found
+            if( answer_i.end == NULL || abs(reqSum - currSum) <= answer_i.diff ){
+                answer_i.start = &revArr_i->reviews[iteratorStart];
+                answer_i.end = &revArr_i->reviews[iteratorEnd];
+                answer_i.sum = currSum;
+                answer_i.diff = abs(reqSum - answer_i.sum);
+                if( iteratorEnd+1 == revArr_i->size )
+                    break;
+                continue;
+            }
+            else
+                break;
+
+        }
+
+        while( true ){
+            // subtracting all entries of the same day
+            while( true ){
+                if( iteratorStart == iteratorEnd )
+                    break;
+                currSum -= revArr_i->reviews[iteratorStart].score;
+                if( revArr_i->reviews[iteratorStart].date != revArr_i->reviews[iteratorStart+1].date )
+                    break;
+                iteratorStart ++;
+            }
+
+            // initialize the structure if it's the first loop
+            // or update the structure if better entry is found
+            if( abs(reqSum - currSum) < answer_i.diff ){
+                if( iteratorStart == iteratorEnd &&
+                    revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
+                    break;
+                answer_i.start = &revArr_i->reviews[iteratorStart];
+                answer_i.end = &revArr_i->reviews[iteratorEnd];
+                answer_i.sum = currSum;
+                answer_i.diff = abs(reqSum - answer_i.sum);
+                continue;
+            }
+            else
+                break;
+        }
+
+        if( iteratorStart == iteratorEnd )
+            break;
+    }
+
+
+    return answer_i;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void printAnswer( char requestType, struct answer answer_i ){
+    printf("%d-%d-%d - %d-%d-%d: %d\n",
+           answer_i.start->date / 10000,
+           answer_i.start->date % 10000 / 100,
+           answer_i.start->date % 1000000,
+           answer_i.end->date / 10000,
+           answer_i.end->date % 10000 / 100,
+           answer_i.end->date % 1000000,
+           answer_i.sum);
+    if( requestType == '?'){
+        while( answer_i.start != answer_i.end+1 ){
+            printf("  %d: %s\n", answer_i.start->score, answer_i.start->text);
+            answer_i.start ++;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 int main(){
     char requestType;
     int sum;
-    struct revArr revArr_i = {0, 5, malloc( revArr_i.max*sizeof(struct review) )};
+    struct revArr revArr_i = {(struct review*) malloc( revArr_i.max*sizeof(struct review) ), 0, 5};
+    struct answer answer_i;
 
-    if( input(&requestType, &sum, &revArr_i) == 1 ){
-        printf("Nespravny vstup.\n");
-        return 1;
+    while( true ){
+        int inputOut = input(&requestType, &sum, &revArr_i);
+        if( inputOut == 1 ){
+            printf("Nespravny vstup.\n");
+            free(revArr_i.reviews);
+            return 1;
+        }
+        if( inputOut == -1 )
+            break;
+        if(requestType == '+')
+            continue;
+
+        answer_i = search( sum, &revArr_i );
+        printAnswer( requestType, answer_i );
     }
 
+    free(revArr_i.reviews);
     return 0;
 }
