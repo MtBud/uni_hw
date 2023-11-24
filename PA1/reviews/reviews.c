@@ -195,7 +195,8 @@ struct answer search( int reqSum, struct revArr* revArr_i ){
 
             // initialize the structure if it's the first loop
             // or update the structure if better entry is found
-            if( abs(reqSum - currSum) < answer_i.diff ){
+            if( abs(reqSum - currSum) < answer_i.diff ||
+                (abs(reqSum - currSum) == answer_i.diff && answer_i.end < &revArr_i->reviews[iteratorEnd])){
                 if( iteratorStart+1 == revArr_i->size &&
                     revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
                     break;
@@ -228,7 +229,7 @@ struct answer search( int reqSum, struct revArr* revArr_i ){
 //----------------------------------------------------------------------------------------------------------------------
 
 void printAnswer( char requestType, struct answer answer_i ){
-    printf("%d-%d-%d - %d-%d-%d: %d\n",
+    printf("%d-%.2d-%.2d - %d-%.2d-%.2d: %d\n",
            answer_i.start->date / 10000,
            answer_i.start->date % 10000 / 100,
            answer_i.start->date % 100,
