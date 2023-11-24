@@ -59,8 +59,17 @@ bool checkDateValidity( int y, int m, int d ){
 
 // reallocates the reviews array
 void reallocate( struct revArr* revArr_i ){
-    revArr_i->max = revArr_i->max * 1.5;
-    revArr_i->reviews = (struct review*) realloc(&revArr_i->reviews, sizeof(struct review) * revArr_i->max );
+    revArr_i->max = (int) revArr_i->max * 1.5;
+    revArr_i->reviews = (struct review*) realloc(revArr_i->reviews, sizeof(struct review) * revArr_i->max );
+}
+
+void printEntry( char requestType, struct review review_i ){
+    printf("%c %d-%d-%d %d %s\n", requestType,
+           review_i.date / 10000,
+           review_i.date % 10000 / 100,
+           review_i.date % 100,
+           review_i.score,
+           review_i.text);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -107,9 +116,10 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
     // if it passes all the tests, the new entry is added to the all encompassing array
     if( revArr_i->max == revArr_i->size )
         reallocate( revArr_i );
-    revArr_i->size ++;
     revArr_i->reviews[revArr_i->size] = newEntry;
+    revArr_i->size ++;
 
+    //printEntry( *requestType, newEntry );
     return 0;
 }
 
@@ -195,10 +205,10 @@ void printAnswer( char requestType, struct answer answer_i ){
     printf("%d-%d-%d - %d-%d-%d: %d\n",
            answer_i.start->date / 10000,
            answer_i.start->date % 10000 / 100,
-           answer_i.start->date % 1000000,
+           answer_i.start->date % 100,
            answer_i.end->date / 10000,
            answer_i.end->date % 10000 / 100,
-           answer_i.end->date % 1000000,
+           answer_i.end->date % 100,
            answer_i.sum);
     if( requestType == '?'){
         while( answer_i.start != answer_i.end+1 ){
@@ -225,8 +235,14 @@ int main(){
         }
         if( inputOut == -1 )
             break;
-        if(requestType == '+')
+        if(requestType == '+'){
+            answer_i.start = &revArr_i.reviews[0];
+            answer_i.end = &revArr_i.reviews[revArr_i.size-1];
+            answer_i.sum = 0;
+            answer_i.diff = 0;
+            //printAnswer( '?', answer_i );
             continue;
+        }
 
         answer_i = search( sum, &revArr_i );
         printAnswer( requestType, answer_i );
