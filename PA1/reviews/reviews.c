@@ -105,6 +105,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
         return 1;
     if( scanf("%s", newEntry.text) != 1 )
         return 1;
+    if( newEntry.score <= 0 )
+        return 1;
 
     // check if the date is valid and more or equal than the previous one
     if( !checkDateValidity( year, month, day) )
