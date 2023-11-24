@@ -133,16 +133,22 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
 struct answer search( int reqSum, struct revArr* revArr_i ){
     struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
     int iteratorEnd = 0, iteratorStart = 0, currSum = 0;
+    bool reachEndFlag = false;
 
     while( true ){
 
         // adding new days
         while( true ){
+            if( reachEndFlag )
+                break;
             // adding all the entries of the same day
             while( true ){
                 currSum += revArr_i->reviews[iteratorEnd].score;
-                if( iteratorEnd+1 == revArr_i->size )
+                if( iteratorEnd+1 == revArr_i->size ){
+                    reachEndFlag = true;
                     break;
+                }
+
                 if( revArr_i->reviews[iteratorEnd].date != revArr_i->reviews[iteratorEnd+1].date )
                     break;
                 iteratorEnd ++;
@@ -155,44 +161,64 @@ struct answer search( int reqSum, struct revArr* revArr_i ){
                 answer_i.end = &revArr_i->reviews[iteratorEnd];
                 answer_i.sum = currSum;
                 answer_i.diff = abs(reqSum - answer_i.sum);
+                //printf("sumWriteAdd: %d\n", currSum);
+
                 if( iteratorEnd+1 == revArr_i->size )
                     break;
+                iteratorEnd ++;
                 continue;
             }
             else
                 break;
 
         }
+        //printf("currSumAdd: %d\n", currSum);
+
 
         while( true ){
+            if(iteratorStart == iteratorEnd)
+                break;
             // subtracting all entries of the same day
             while( true ){
-                if( iteratorStart == iteratorEnd )
+                if( iteratorStart+1 == revArr_i->size )
                     break;
                 currSum -= revArr_i->reviews[iteratorStart].score;
-                if( revArr_i->reviews[iteratorStart].date != revArr_i->reviews[iteratorStart+1].date )
-                    break;
+                //printf("currSum: %d\n", currSum);
+                //printf("iteratorStart: %d\n", iteratorStart);
+                //printf("iteratorEnd: %d\n", iteratorEnd);
+
                 iteratorStart ++;
+                if( revArr_i->reviews[iteratorStart].date != revArr_i->reviews[iteratorStart-1].date )
+                    break;
+
             }
 
             // initialize the structure if it's the first loop
             // or update the structure if better entry is found
             if( abs(reqSum - currSum) < answer_i.diff ){
-                if( iteratorStart == iteratorEnd &&
+                if( iteratorStart+1 == revArr_i->size &&
                     revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
                     break;
                 answer_i.start = &revArr_i->reviews[iteratorStart];
                 answer_i.end = &revArr_i->reviews[iteratorEnd];
                 answer_i.sum = currSum;
                 answer_i.diff = abs(reqSum - answer_i.sum);
+                //printf("sumWriteSub: %d\n", currSum);
+                if( iteratorStart+1 == revArr_i->size )
+                    break;
                 continue;
             }
             else
                 break;
         }
+        //printf("currSumSub: %d\n", currSum);
 
-        if( iteratorStart == iteratorEnd )
+
+        if( iteratorStart+1 == revArr_i->size)
             break;
+
+        if( iteratorEnd+1 != revArr_i->size )
+            iteratorEnd++;
     }
 
 
@@ -226,6 +252,7 @@ int main(){
     struct revArr revArr_i = {(struct review*) malloc( revArr_i.max*sizeof(struct review) ), 0, 5};
     struct answer answer_i;
 
+    printf("Recenze:\n");
     while( true ){
         int inputOut = input(&requestType, &sum, &revArr_i);
         if( inputOut == 1 ){
@@ -235,12 +262,13 @@ int main(){
         }
         if( inputOut == -1 )
             break;
-        if(requestType == '+'){
+        if(requestType == '+'){/*
             answer_i.start = &revArr_i.reviews[0];
             answer_i.end = &revArr_i.reviews[revArr_i.size-1];
             answer_i.sum = 0;
             answer_i.diff = 0;
-            //printAnswer( '?', answer_i );
+            printAnswer( '?', answer_i );
+            printf("size: %d\n", revArr_i.size);*/
             continue;
         }
 
