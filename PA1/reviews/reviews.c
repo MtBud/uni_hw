@@ -88,6 +88,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
             return 1;
         if( scanf("%d", sum) != 1 )
             return 1;
+        if(getc(stdin) != '\n')
+            return 1;
         if( *sum <= 0 )
             return 1;
         return 0;
@@ -104,6 +106,8 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
     if( scanf("%d", &newEntry.score) != 1 )
         return 1;
     if( scanf("%s", newEntry.text) != 1 )
+        return 1;
+    if(getc(stdin) != '\n')
         return 1;
     if( newEntry.score <= 0 )
         return 1;
@@ -127,12 +131,71 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
 
 //----------------------------------------------------------------------------------------------------------------------
 
+struct answer search_simple( int reqSum, struct revArr* revArr_i ){
+    struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
+    int iteratorStart = 0, iteratorEnd = 0, currSum = 0;
+    bool reachEndFlag = false;
+
+
+    while( true ){
+
+        while( true ){
+            currSum += revArr_i->reviews[iteratorEnd].score;
+            if( iteratorEnd+1 == revArr_i->size )
+                reachEndFlag = true;
+
+            if( revArr_i->reviews[iteratorEnd].date == revArr_i->reviews[iteratorEnd+1].date &&
+                !reachEndFlag ){
+                iteratorEnd ++;
+                continue;
+            }
+
+            if( answer_i.end == NULL ||
+                abs(reqSum - currSum) < answer_i.diff ||
+                ( abs(reqSum - currSum) == answer_i.diff && answer_i.end < &revArr_i->reviews[iteratorEnd] ) ||
+                ( abs(reqSum - currSum) == answer_i.diff && answer_i.end == &revArr_i->reviews[iteratorEnd] && currSum > answer_i.sum )){
+
+                answer_i.start = &revArr_i->reviews[iteratorStart];
+                answer_i.end = &revArr_i->reviews[iteratorEnd];
+                answer_i.sum = currSum;
+                answer_i.diff = abs(reqSum - answer_i.sum);
+
+            }
+
+            if(reachEndFlag)
+                break;
+
+            iteratorEnd ++;
+        }
+
+        iteratorStart ++;
+        if( iteratorStart == revArr_i->size )
+            break;
+        while( true ){
+            if(iteratorStart+1 == revArr_i->size)
+                break;
+            if(revArr_i->reviews[iteratorStart].date != revArr_i->reviews[iteratorStart-1].date)
+                break;
+            iteratorStart ++;
+        }
+        if( iteratorStart+1 == revArr_i->size && revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
+            break;
+
+        iteratorEnd = iteratorStart;
+        currSum = 0;
+        reachEndFlag = false;
+    }
+
+    return answer_i;
+}
+
+
 /**
  * Add days until the difference between the desired sum and the current sum starts getting bigger.
  * Subtract days until the difference starts getting bigger.
  * Repeat until the best fit is found.
  * */
-struct answer search( int reqSum, struct revArr* revArr_i ){
+struct answer search_complex( int reqSum, struct revArr* revArr_i ){
     struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
     int iteratorEnd = 0, iteratorStart = 0, currSum = 0;
     bool reachEndFlag = false;
@@ -195,8 +258,7 @@ struct answer search( int reqSum, struct revArr* revArr_i ){
 
             }
 
-            // initialize the structure if it's the first loop
-            // or update the structure if better entry is found
+            // update the structure if better entry is found
             if( abs(reqSum - currSum) < answer_i.diff ||
                 (abs(reqSum - currSum) == answer_i.diff && answer_i.end < &revArr_i->reviews[iteratorEnd])){
                 if( iteratorStart+1 == revArr_i->size &&
@@ -275,7 +337,7 @@ int main(){
             continue;
         }
 
-        answer_i = search( sum, &revArr_i );
+        answer_i = search_simple( sum, &revArr_i );
         printAnswer( requestType, answer_i );
     }
 
