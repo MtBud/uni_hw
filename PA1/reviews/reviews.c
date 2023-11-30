@@ -1,25 +1,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
+/**
+ * @var daysInMonth Global constant holding the numbers of days in individual months.
+ */
 const int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-// symbolizes one review
+/** @struct review
+ *  @brief  Structure representing an individual user review.
+ *  @var    date    Stores the date of the review. The date is formatted as one number: YYYYMMDD.
+ *  @var    score   Stores the score of the review
+ *  @var    text    Stores the commentary of the review
+ */
 struct review{
     int date;
     int score;
     char text[4097];
 };
 
-// takes care of the whole array of reviews
+/** @struct revArr
+ *  @brief  Structure holding values for maintaining and taking care of the dynamically allocated array of @see review.
+ *  @var    reviews pointer to an array of @see review
+ *  @var    size    stores the number of elements in the array
+ *  @var    max     stores the number of allocated places in the array
+ */
 struct revArr{
     struct review* reviews;
     int size;
     int max;
 };
 
-// is used as output of the searching algorithm
-// start and end are the pointers to the start and end of the interval, sum is the total
+
+/** @struct answer
+ *  @brief Structure is used in @see search and @see printAnswer for passing information about the latest search
+ *         between the two functions.
+ *  @var    start   holds the pointer to the beginning of the found interval
+ *  @var    end     holds the pointer to the end of the found interval
+ *  @var    sum     holds the closest sum that has been found
+ *  @var    diff    holds the difference between the sum that is requested and sum that has been fuond
+ */
 struct answer{
     struct review* start;
     struct review* end;
@@ -29,6 +48,11 @@ struct answer{
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/** @fn isLeap
+ * Function decides if a given year y is leap or not
+ * @param   y   year to be checked
+ * @return return true if year is leap, false if not
+ */
 bool isLeap( int y ){
     if( y % 4000 == 0 )
         return false;
@@ -41,7 +65,13 @@ bool isLeap( int y ){
     return false;
 }
 
-// check if date is valid(true) or not(false)
+/** @fn checkDateValidity
+ * Function checks if a given date is a valid existing date
+ * @param   y   year
+ * @param   m   month
+ * @param   d   day
+ * @return return true if date is valid, false if not
+ */
 bool checkDateValidity( int y, int m, int d ){
     if( m < 1 || m > 12 )
         return false;
@@ -57,25 +87,26 @@ bool checkDateValidity( int y, int m, int d ){
     return true;
 }
 
-// reallocates the reviews array
+/** @fn reallocate
+ * Function reallocates the dynamically allocated array of reviews
+ * @param revArr_i pointer to existing @see revArr that needs to be reallocated
+ */
 void reallocate( struct revArr* revArr_i ){
     revArr_i->max = (int) revArr_i->max * 1.5;
     revArr_i->reviews = (struct review*) realloc(revArr_i->reviews, sizeof(struct review) * revArr_i->max );
 }
 
-void printEntry( char requestType, struct review review_i ){
-    printf("%c %d-%d-%d %d %s\n", requestType,
-           review_i.date / 10000,
-           review_i.date % 10000 / 100,
-           review_i.date % 100,
-           review_i.score,
-           review_i.text);
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 
-/**
- * Function takes care of input sanitization. It also fills in the information into the reviews array.
+/** @fn input
+ * Function takes care of input sanitization. It also adds new entries into the array of user reviews.
+ *
+ * @param   requestType pointer used as output. Stores the data about what type of request is being processed
+ * @param   sum pointer used as output. If the request is a "search", it stores the number to be approximated.
+ *              If the request is an "add", contents are undefined.
+ * @param   revArr_i pointer to an instance of @see revArr
+ *
+ * @return  Function returns 0 for success, 1 for wrong input and -1 for end of input
  * */
 int input( char* requestType, int* sum , struct revArr* revArr_i ){
     // get the type of request, end program if end of input is detected
@@ -131,7 +162,13 @@ int input( char* requestType, int* sum , struct revArr* revArr_i ){
 
 //----------------------------------------------------------------------------------------------------------------------
 
-struct answer search_simple( int reqSum, struct revArr* revArr_i ){
+/** @fn search
+ * Functions searches the array for the best fitting interval
+ * @param reqSum    sum required by the search request
+ * @param revArr_i  pointer to @see revArr
+ * @return @see answer
+ */
+struct answer search( int reqSum, struct revArr* revArr_i ){
     struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
     int iteratorStart = 0, iteratorEnd = 0, currSum = 0;
     bool reachEndFlag = false;
@@ -139,17 +176,20 @@ struct answer search_simple( int reqSum, struct revArr* revArr_i ){
 
     while( true ){
 
+        // iterate over the array from iteratorStart to iteratorEnd
         while( true ){
             currSum += revArr_i->reviews[iteratorEnd].score;
             if( iteratorEnd+1 == revArr_i->size )
                 reachEndFlag = true;
 
+            // add whole days
             if( revArr_i->reviews[iteratorEnd].date == revArr_i->reviews[iteratorEnd+1].date &&
                 !reachEndFlag ){
                 iteratorEnd ++;
                 continue;
             }
 
+            // fill in a new answer_i if the specified criteria is met
             if( answer_i.end == NULL ||
                 abs(reqSum - currSum) < answer_i.diff ||
                 ( abs(reqSum - currSum) == answer_i.diff && answer_i.end < &revArr_i->reviews[iteratorEnd] ) ||
@@ -168,6 +208,7 @@ struct answer search_simple( int reqSum, struct revArr* revArr_i ){
             iteratorEnd ++;
         }
 
+        // move iteratorStart one day forward
         iteratorStart ++;
         if( iteratorStart == revArr_i->size )
             break;
@@ -181,6 +222,7 @@ struct answer search_simple( int reqSum, struct revArr* revArr_i ){
         if( iteratorStart+1 == revArr_i->size && revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
             break;
 
+        // reset all other variables
         iteratorEnd = iteratorStart;
         currSum = 0;
         reachEndFlag = false;
@@ -189,109 +231,13 @@ struct answer search_simple( int reqSum, struct revArr* revArr_i ){
     return answer_i;
 }
 
-
-/**
- * Add days until the difference between the desired sum and the current sum starts getting bigger.
- * Subtract days until the difference starts getting bigger.
- * Repeat until the best fit is found.
- * */
-struct answer search_complex( int reqSum, struct revArr* revArr_i ){
-    struct answer answer_i = {revArr_i->reviews, NULL, 0, 0};
-    int iteratorEnd = 0, iteratorStart = 0, currSum = 0;
-    bool reachEndFlag = false;
-
-    while( true ){
-
-        // adding new days
-        while( true ){
-            if( reachEndFlag )
-                break;
-            // adding all the entries of the same day
-            while( true ){
-                currSum += revArr_i->reviews[iteratorEnd].score;
-                if( iteratorEnd+1 == revArr_i->size ){
-                    reachEndFlag = true;
-                    break;
-                }
-
-                if( revArr_i->reviews[iteratorEnd].date != revArr_i->reviews[iteratorEnd+1].date )
-                    break;
-                iteratorEnd ++;
-            }
-
-            // initialize the structure if it's the first loop
-            // or update the structure if better entry is found
-            if( answer_i.end == NULL || abs(reqSum - currSum) <= answer_i.diff ){
-                answer_i.start = &revArr_i->reviews[iteratorStart];
-                answer_i.end = &revArr_i->reviews[iteratorEnd];
-                answer_i.sum = currSum;
-                answer_i.diff = abs(reqSum - answer_i.sum);
-                //printf("sumWriteAdd: %d\n", currSum);
-
-                if( iteratorEnd+1 == revArr_i->size )
-                    break;
-                iteratorEnd ++;
-                continue;
-            }
-            else
-                break;
-
-        }
-        //printf("currSumAdd: %d\n", currSum);
-
-
-        while( true ){
-            if(iteratorStart == iteratorEnd)
-                break;
-            // subtracting all entries of the same day
-            while( true ){
-                if( iteratorStart+1 == revArr_i->size )
-                    break;
-                currSum -= revArr_i->reviews[iteratorStart].score;
-                //printf("currSum: %d\n", currSum);
-                //printf("iteratorStart: %d\n", iteratorStart);
-                //printf("iteratorEnd: %d\n", iteratorEnd);
-
-                iteratorStart ++;
-                if( revArr_i->reviews[iteratorStart].date != revArr_i->reviews[iteratorStart-1].date )
-                    break;
-
-            }
-
-            // update the structure if better entry is found
-            if( abs(reqSum - currSum) < answer_i.diff ||
-                (abs(reqSum - currSum) == answer_i.diff && answer_i.end < &revArr_i->reviews[iteratorEnd])){
-                if( iteratorStart+1 == revArr_i->size &&
-                    revArr_i->reviews[iteratorStart].date == revArr_i->reviews[iteratorStart-1].date )
-                    break;
-                answer_i.start = &revArr_i->reviews[iteratorStart];
-                answer_i.end = &revArr_i->reviews[iteratorEnd];
-                answer_i.sum = currSum;
-                answer_i.diff = abs(reqSum - answer_i.sum);
-                //printf("sumWriteSub: %d\n", currSum);
-                if( iteratorStart+1 == revArr_i->size )
-                    break;
-                continue;
-            }
-            else
-                break;
-        }
-        //printf("currSumSub: %d\n", currSum);
-
-
-        if( iteratorStart+1 == revArr_i->size)
-            break;
-
-        if( iteratorEnd+1 != revArr_i->size )
-            iteratorEnd++;
-    }
-
-
-    return answer_i;
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 
+/** @fn printAnswer
+ * Function used for printing out the output
+ * @param requestType   type of request
+ * @param answer_i      @see answer
+ */
 void printAnswer( char requestType, struct answer answer_i ){
     printf("%d-%.2d-%.2d - %d-%.2d-%.2d: %d\n",
            answer_i.start->date / 10000,
@@ -327,17 +273,11 @@ int main(){
         }
         if( inputOut == -1 )
             break;
-        if(requestType == '+'){/*
-            answer_i.start = &revArr_i.reviews[0];
-            answer_i.end = &revArr_i.reviews[revArr_i.size-1];
-            answer_i.sum = 0;
-            answer_i.diff = 0;
-            printAnswer( '?', answer_i );
-            printf("size: %d\n", revArr_i.size);*/
+        if(requestType == '+')
             continue;
-        }
 
-        answer_i = search_simple( sum, &revArr_i );
+
+        answer_i = search( sum, &revArr_i );
         printAnswer( requestType, answer_i );
     }
 
