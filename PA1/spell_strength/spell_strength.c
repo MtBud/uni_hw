@@ -7,16 +7,6 @@
 #define DICTSIZE 40
 bool duplicates_flag = false;
 
-
-/**
- * Structure takes care of the whole string input on stdin
- * */
-struct strArr{
-    char* str;
-    char* strEnd;
-    size_t max;
-};
-
 /**
  * Structure representing one word in a dictionary
  */
@@ -57,24 +47,6 @@ void strToLower( char* str ){
     }
 }
 
-/**
- * Function used for reallocating the array storing the one whole string
- * @return returns the size of newly allocated empty space (num of elements, not size in bytes)
- * @param inStr
- */
-size_t reallocStr( struct strArr* inStr ){
-    char* tmp;
-    size_t sizediff = inStr->max;
-    inStr->max = (int) ((double) inStr->max * 1.5);
-    sizediff = inStr->max - sizediff;
-    tmp = (char*) realloc(inStr->str, inStr->max * sizeof(char));
-    if( tmp == NULL){
-        printf("Reallocation failed, str\n");
-        exit (EXIT_FAILURE);
-    }
-    inStr->str = tmp;
-    return sizediff;
-}
 
 /**
  * Function used to reallocate the words array in dictionary structure
@@ -137,118 +109,6 @@ int compareDict( const void* a, const void* b ){
     return comparison;
 }
 
-/**
- * Function takes care of the large string on stdin
- * @param inStr
- * @return
- */
-int input( struct strArr* inStr ){
-    size_t maxIn = inStr->max;
-    char* fgetsOut;
-
-    // check if no words have been entered
-    fgetsOut = fgets( inStr->str, (int) maxIn, stdin);
-    if( fgetsOut == NULL )
-        return 1;
-
-    // check
-    if( feof(stdin) ){
-        inStr->strEnd = strrchr(inStr->str, '\0');
-        return 0;
-    }
-    maxIn = reallocStr(inStr);
-    inStr->strEnd = strrchr(inStr->str, '\0');
-
-    while( true ){
-        fgetsOut = fgets( inStr->strEnd, (int) maxIn, stdin);
-
-        if( feof(stdin) ){
-            inStr->strEnd = strrchr(inStr->str, '\0');
-            break;
-        }
-
-        maxIn = reallocStr(inStr);
-        inStr->strEnd = strrchr(inStr->str, '\0');
-
-    }
-
-    char* tmp;
-    inStr->max = strlen(inStr->str) + 1;
-    tmp = (char*) realloc(inStr->str, inStr->max * sizeof(char));
-    if( tmp == NULL){
-        printf("Reallocation failed, str\n");
-        exit (EXIT_FAILURE);
-    }
-    inStr->str = tmp;
-
-    return 0;
-}
-
-/**
- * Separates the one big string into single words and stores them in an array
- * @return 0 on success, 1 on fail ( word is duplicate )
- */
-int separate( struct strArr* inStr, struct dictionary* dict, struct dictionary* dictLwr ){
-    char* wordStart = inStr->str;
-    char* wordEnd;
-    size_t length;
-    char tmp;
-    uint dictIter = 0;
-
-    while( true ){
-        // find the start of a new word
-        if( wordStart[0] == '\0')
-            break;
-        if(isspace(wordStart[0])){
-            wordStart ++;
-            continue;
-        }
-
-        // find the end of a new word
-        wordEnd = wordStart + 1;
-        while(true){
-            if(isspace(wordEnd[0]) || wordEnd[0] == '\0')
-                break;
-            wordEnd ++;
-        }
-
-        // reallocate dictionaries if needed
-        if( dictIter == dict->max ){
-            dict->size = dictIter;
-            dictLwr->size = dictIter;
-            reallocDict( dict );
-            reallocDict( dictLwr );
-        }
-
-        // add new word into the dictionaries
-        dict->size = dictIter;
-        tmp = wordEnd[0];
-        wordEnd[0] = '\0';
-        length = strlen(wordStart);
-        dict->word[dictIter].word = (char*) malloc( (length+1) * sizeof(char) );
-        dictLwr->word[dictIter].word = (char*) malloc( (length+1) * sizeof(char) );
-        strcpy(dict->word[dictIter].word, wordStart);
-        strcpy(dictLwr->word[dictIter].word, wordStart);
-        strToLower(dictLwr->word[dictIter].word);
-        dict->word[dictIter].idx = (int) dictIter;
-        dictLwr->word[dictIter].idx = (int) dictIter;
-
-
-        wordEnd[0] = tmp;
-        wordStart = wordEnd;
-        dictIter ++;
-    }
-
-    // check for no words
-    if( dictIter == 0 )
-        return 1;
-
-    dict->size = dictIter;
-    dictLwr->size = dictIter;
-
-    return 0;
-}
-
 
 /**
  * Function fills in the dictionaries straight from the input
@@ -309,6 +169,8 @@ int input_straight( struct dictionary* dict, struct dictionary* dictLwr ){
         buff[iter] = c;
         iter ++;
     }
+
+    free(buff);
 
     if( dictIter == 0 )
         return 1;
@@ -377,7 +239,6 @@ int main(){
     }
 
     //printDictionary( &dictLwr );
-
 
     // sort the dictionary lexicographically and check for duplicates
     qsort( dictLwr.word, dict.size, sizeof(struct wordStr), compareDict );
