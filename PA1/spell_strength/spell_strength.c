@@ -5,6 +5,8 @@
 #include <ctype.h>
 #define STRSIZE 10
 #define DICTSIZE 4
+bool duplicates_flag = false;
+
 
 /**
  * Structure takes care of the whole string input on stdin
@@ -32,6 +34,14 @@ void printDictionary( struct dictionary* dict ){
     }
 }
 
+void strToLower( char* str ){
+    int i = 0;
+    while( str[i] != '\0' ){
+        str[i] = (char) tolower(str[i]);
+        i ++;
+    }
+}
+
 /**
  * Function used for reallocating the array storing the one whole string
  * @return returns the size of newly allocated empty space (num of elements, not size in bytes)
@@ -53,7 +63,7 @@ size_t reallocStr( struct strArr* inStr ){
 
 void reallocDict( struct dictionary* dict ){
     //printDictionary( dict );
-    printf("REALLOC DICT\n");
+    //printf("REALLOC DICT\n");
     char** tmp;
     dict->max *= 2;
     tmp = (char**) realloc(dict->word, dict->max * sizeof(char*));
@@ -62,6 +72,40 @@ void reallocDict( struct dictionary* dict ){
         exit (EXIT_FAILURE);
     }
     dict->word = tmp;
+}
+
+/**
+ * Comparison function used in quicksort
+ * @param a
+ * @param b
+ * @return
+ */
+int compareDict( const void* a, const void* b ){
+    const char *arg1 = *(char**)a;
+    char *arg1Lower = (char*) malloc(sizeof(char) * (strlen(arg1) + 1));
+    const char *arg2 = *(char**)b;
+    char *arg2Lower = (char*) malloc(sizeof(char) * (strlen(arg2) + 1));
+    strcpy(arg1Lower, arg1);
+    strcpy(arg2Lower, arg2);
+    strToLower( arg1Lower );
+    strToLower( arg2Lower );
+
+
+    int comparison = strcmp(arg1Lower, arg2Lower);
+    //printf("compare: %s, %s, outcome: %d\n", arg1, arg2, comparison );
+    if( comparison == 0 ){
+        duplicates_flag = true;
+    }
+
+    free(arg1Lower);
+    free(arg2Lower);
+    return comparison;
+}
+
+void freeDict( struct dictionary* dict ){
+    for( uint i = 0; i < dict->size - 1 ; i ++ )
+        free( dict->word[i] );
+    free(dict->word);
 }
 
 /**
@@ -143,8 +187,8 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
         length = strlen(wordStart);
         dict->word[dictIter] = (char*) malloc( (length+1) * sizeof(char) );
         strcpy(dict->word[dictIter], wordStart);
-        printf("OG: %s\n", wordStart);
-        printf("CP: %s\n", dict->word[dictIter]);
+        //printf("OG: %s\n", wordStart);
+        //printf("CP: %s\n", dict->word[dictIter]);
         //printDictionary(dict);
         wordEnd[0] = tmp;
         wordStart = wordEnd;
@@ -161,6 +205,17 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
     return 0;
 }
 
+/**
+ * Prints the final output
+ * @param dict
+ * @return
+ */
+int printFinal( struct dictionary* dict ){
+    for( int i = (int) dict->size - 1; i > 0; i -- )
+        printf("%s ", dict->word[i]);
+    printf("%s\n", dict->word[0]);
+    return 0;
+}
 
 /*
  * TODO
@@ -179,24 +234,43 @@ int main(){
         free(inStr.str);
         return 1;
     }
+    /*
     printf("STRING\n");
     printf("%s\n", inStr.str);
-
+    */
 
     struct dictionary dict;
     dict.max = DICTSIZE;
     dict.size = 0;
     dict.word = (char**) malloc( dict.max * sizeof(char*) );
 
-    // separates the input and checks for duplicates
+    // separates the input and fills words into the dictionary
     if( separate( &inStr, &dict ) ){
         printf("Nespravny vstup.\n");
+        free(inStr.str);
+        freeDict(&dict);
         return 1;
     }
+    //printDictionary( &dict );
+
+    // sort the dictionary lexicographically and check for duplicates
+    qsort( dict.word, dict.size, sizeof(char*), compareDict );
+    if( duplicates_flag ){
+        printf("Nespravny vstup.\n");
+        free(inStr.str);
+        freeDict(&dict);
+        return 1;
+    }
+
+    /*
+    printf("\nSORTED\n");
     printDictionary( &dict );
+    */
+
+    // print the output
+    printFinal( &dict );
 
     free(inStr.str);
-
-
+    freeDict(&dict);
     return 0;
 }
