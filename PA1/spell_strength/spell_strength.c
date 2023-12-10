@@ -4,36 +4,64 @@
 #include <stdbool.h>
 #include <ctype.h>
 #define STRSIZE 10
+#define DICTSIZE 4
 
 /**
  * Structure takes care of the whole string input on stdin
  * */
 struct strArr{
-    size_t max;
     char* str;
     char* strEnd;
+    size_t max;
 };
 
 /**
  * Structure used to store separated whole words
  */
 struct dictionary{
+    char** word;
     size_t max;
     size_t size;
-    char** word;
 };
+
+
+void printDictionary( struct dictionary* dict ){
+    printf("\nDICTIONARY\n");
+    for( uint i = 0; i < dict->size; i++ ){
+        printf("%s\n", dict->word[i]);
+    }
+}
 
 /**
  * Function used for reallocating the array storing the one whole string
  * @return returns the size of newly allocated empty space (num of elements, not size in bytes)
  * @param inStr
  */
-size_t reallocate( struct strArr* inStr ){
+size_t reallocStr( struct strArr* inStr ){
+    char* tmp;
     size_t sizediff = inStr->max;
     inStr->max *= 2;
     sizediff = inStr->max - sizediff;
-    inStr->str = (char*) realloc(inStr->str, inStr->max);
+    tmp = (char*) realloc(inStr->str, inStr->max * sizeof(char));
+    if( tmp == NULL){
+        printf("Reallocation failed\n");
+        exit (EXIT_FAILURE);
+    }
+    inStr->str = tmp;
     return sizediff;
+}
+
+void reallocDict( struct dictionary* dict ){
+    //printDictionary( dict );
+    printf("REALLOC DICT\n");
+    char** tmp;
+    dict->max *= 2;
+    tmp = (char**) realloc(dict->word, dict->max * sizeof(char*));
+    if( tmp == NULL){
+        printf("Reallocation failed\n");
+        exit (EXIT_FAILURE);
+    }
+    dict->word = tmp;
 }
 
 /**
@@ -55,7 +83,7 @@ int input( struct strArr* inStr ){
         inStr->strEnd = strrchr(inStr->str, '\0');
         return 0;
     }
-    maxIn = reallocate(inStr);
+    maxIn = reallocStr(inStr);
     inStr->strEnd = strrchr(inStr->str, '\0');
 
     while( true ){
@@ -66,7 +94,7 @@ int input( struct strArr* inStr ){
             break;
         }
 
-        maxIn = reallocate(inStr);
+        maxIn = reallocStr(inStr);
         inStr->strEnd = strrchr(inStr->str, '\0');
 
     }
@@ -102,25 +130,33 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
             wordEnd ++;
         }
 
+        // reallocate dictionary if needed
+        if( dictIter == dict->max ){
+            dict->size = dictIter;
+            reallocDict( dict );
+        }
+
         // add new word into the dictionary
+        dict->size = dictIter;
         tmp = wordEnd[0];
         wordEnd[0] = '\0';
         length = strlen(wordStart);
         dict->word[dictIter] = (char*) malloc( (length+1) * sizeof(char) );
         strcpy(dict->word[dictIter], wordStart);
+        printf("OG: %s\n", wordStart);
+        printf("CP: %s\n", dict->word[dictIter]);
+        //printDictionary(dict);
         wordEnd[0] = tmp;
+        wordStart = wordEnd;
         dictIter ++;
-        // reallocate dictionary if needed
-        if( dictIter == dict->max ){
-            dict->max = dict->max * 2;
-            dict->word = (char**) realloc(dict->word, dict->max);
-        }
 
     }
 
     // check for no words
     if( dictIter == 0 )
         return 1;
+
+    dict->size = dictIter;
 
     return 0;
 }
@@ -140,11 +176,15 @@ int main(){
     // load in the input and check for empty input
     if( input(&inStr) ){
         printf("Nespravny vstup.\n");
+        free(inStr.str);
         return 1;
     }
+    printf("STRING\n");
+    printf("%s\n", inStr.str);
+
 
     struct dictionary dict;
-    dict.max = 10;
+    dict.max = DICTSIZE;
     dict.size = 0;
     dict.word = (char**) malloc( dict.max * sizeof(char*) );
 
@@ -153,9 +193,10 @@ int main(){
         printf("Nespravny vstup.\n");
         return 1;
     }
+    printDictionary( &dict );
+
     free(inStr.str);
 
-    printf("\n%s\n", inStr.str);
 
     return 0;
 }
