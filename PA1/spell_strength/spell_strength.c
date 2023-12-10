@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
-#define STRSIZE 10
-#define DICTSIZE 4
+#define STRSIZE 100
+#define DICTSIZE 40
 bool duplicates_flag = false;
 
 
@@ -65,11 +65,11 @@ void strToLower( char* str ){
 size_t reallocStr( struct strArr* inStr ){
     char* tmp;
     size_t sizediff = inStr->max;
-    inStr->max *= 2;
+    inStr->max = (int) ((double) inStr->max * 1.5);
     sizediff = inStr->max - sizediff;
     tmp = (char*) realloc(inStr->str, inStr->max * sizeof(char));
     if( tmp == NULL){
-        printf("Reallocation failed\n");
+        printf("Reallocation failed, str\n");
         exit (EXIT_FAILURE);
     }
     inStr->str = tmp;
@@ -82,10 +82,10 @@ size_t reallocStr( struct strArr* inStr ){
  */
 void reallocDict( struct dictionary* dict ){
     struct wordStr* tmp;
-    dict->max *= 2;
+    dict->max = (int) ((double) dict->max * 1.5);
     tmp = (struct wordStr*) realloc(dict->word, dict->max * sizeof(struct wordStr));
     if( tmp == NULL){
-        printf("Reallocation failed\n");
+        printf("Reallocation failed, dict\n");
         exit (EXIT_FAILURE);
     }
     dict->word = tmp;
@@ -172,6 +172,15 @@ int input( struct strArr* inStr ){
 
     }
 
+    char* tmp;
+    inStr->max = strlen(inStr->str) + 1;
+    tmp = (char*) realloc(inStr->str, inStr->max * sizeof(char));
+    if( tmp == NULL){
+        printf("Reallocation failed, str\n");
+        exit (EXIT_FAILURE);
+    }
+    inStr->str = tmp;
+
     return 0;
 }
 
@@ -240,6 +249,76 @@ int separate( struct strArr* inStr, struct dictionary* dict, struct dictionary* 
     return 0;
 }
 
+
+/**
+ * Function fills in the dictionaries straight from the input
+ * @param dict
+ * @param dictLwr
+ * @return
+ */
+int input_straight( struct dictionary* dict, struct dictionary* dictLwr ){
+    char c;
+    uint iter = 0, dictIter = 0;
+    uint buffMax = STRSIZE;
+    char* buff = (char*) malloc( buffMax * sizeof(char) );
+
+    while( true ){
+        c = (char) getchar();
+        if( c == EOF && iter == 0 )
+            break;
+
+        if( isspace(c) && iter == 0 )
+            continue;
+
+        if( isspace(c) || c == EOF ){
+            buff[iter] = '\0';
+
+            if( dictIter == dict->max ){
+                dict->size = dictIter;
+                dictLwr->size = dictIter;
+                reallocDict( dict );
+                reallocDict( dictLwr );
+            }
+
+            uint length = strlen(buff);
+            dict->word[dictIter].word = (char*) malloc( (length+1) * sizeof(char) );
+            dictLwr->word[dictIter].word = (char*) malloc( (length+1) * sizeof(char) );
+            strcpy(dict->word[dictIter].word, buff);
+            strcpy(dictLwr->word[dictIter].word, buff);
+            strToLower(dictLwr->word[dictIter].word);
+            dict->word[dictIter].idx = (int) dictIter;
+            dictLwr->word[dictIter].idx = (int) dictIter;
+
+
+            iter = 0;
+            dictIter ++;
+            continue;
+        }
+
+        if( iter == buffMax ){
+            buffMax = (int) (buffMax * 1.5);
+            char* tmp;
+            tmp = (char*) realloc( buff, buffMax * sizeof(char) );
+            if( tmp == NULL){
+                printf("Reallocation failed, buff\n");
+                exit (EXIT_FAILURE);
+            }
+            buff = tmp;
+        }
+
+        buff[iter] = c;
+        iter ++;
+    }
+
+    if( dictIter == 0 )
+        return 1;
+
+    dict->size = dictIter;
+    dictLwr->size = dictIter;
+
+    return 0;
+}
+
 /**
  * Prints the final output
  * @param dict
@@ -275,19 +354,6 @@ int printFinal( struct dictionary* dict, struct dictionary* dictLwr ){
  * @return
  */
 int main(){
-    struct strArr inStr;
-    inStr.max = STRSIZE;
-    inStr.str = (char*) malloc(inStr.max * sizeof(char) );
-    inStr.strEnd = inStr.str;
-
-    // load in the input and check for empty input
-    printf("Slova:\n");
-    if( input(&inStr) ){
-        printf("Nespravny vstup.\n");
-        free(inStr.str);
-        return 1;
-    }
-
     // make two dictionaries
     // dict contains all the input words in original format
     // dictLwr contains all words in lowercase
@@ -300,17 +366,18 @@ int main(){
     dictLwr.size = 0;
     dictLwr.word = (struct wordStr*) malloc( dict.max * sizeof(struct wordStr) );
 
-    // separates the input and fills words into the dictionary
-    if( separate( &inStr, &dict, &dictLwr) ){
+
+    // load in the input and check for empty input
+    printf("Slova:\n");
+    if( input_straight( &dict, &dictLwr) ){
         printf("Nespravny vstup.\n");
-        free(inStr.str);
         freeDict(&dict);
         freeDict(&dictLwr);
         return 1;
     }
 
-    // free the long string because it's no longer needed
-    free(inStr.str);
+    //printDictionary( &dictLwr );
+
 
     // sort the dictionary lexicographically and check for duplicates
     qsort( dictLwr.word, dict.size, sizeof(struct wordStr), compareDict );
