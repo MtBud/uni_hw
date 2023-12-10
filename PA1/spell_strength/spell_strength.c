@@ -82,28 +82,35 @@ void reallocDict( struct dictionary* dict ){
  */
 int compareDict( const void* a, const void* b ){
     const char *arg1 = *(char**)a;
-    char *arg1Lower = (char*) malloc(sizeof(char) * (strlen(arg1) + 1));
     const char *arg2 = *(char**)b;
-    char *arg2Lower = (char*) malloc(sizeof(char) * (strlen(arg2) + 1));
-    strcpy(arg1Lower, arg1);
-    strcpy(arg2Lower, arg2);
-    strToLower( arg1Lower );
-    strToLower( arg2Lower );
+    char *arg1First = (char*) malloc(sizeof(char) * (strlen(arg1) + strlen(arg2) + 1));
+    char *arg2First = (char*) malloc(sizeof(char) * (strlen(arg1) + strlen(arg2) + 1));
+    strcpy(arg1First, arg1);
+    strcpy(arg2First, arg2);
 
-
-    int comparison = strcmp(arg1Lower, arg2Lower);
-    //printf("compare: %s, %s, outcome: %d\n", arg1, arg2, comparison );
-    if( comparison == 0 ){
+    // check for duplicates
+    strToLower( arg1First );
+    strToLower( arg2First );
+    if( strcmp(arg1First, arg2First) == 0 ){
         duplicates_flag = true;
     }
 
-    free(arg1Lower);
-    free(arg2Lower);
+    strcat(arg1First, arg2);
+    strcat(arg2First, arg1);
+    strToLower( &arg1First[strlen(arg1)] );
+    strToLower( &arg2First[strlen(arg2)] );
+
+
+    int comparison = strcmp(arg1First, arg2First);
+    //printf("compare: %s, %s, outcome: %d\n", arg1, arg2, comparison );
+
+    free(arg1First);
+    free(arg2First);
     return comparison;
 }
 
 void freeDict( struct dictionary* dict ){
-    for( uint i = 0; i < dict->size - 1 ; i ++ )
+    for( uint i = 0; i < dict->size ; i ++ )
         free( dict->word[i] );
     free(dict->word);
 }
@@ -213,7 +220,6 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
 int printFinal( struct dictionary* dict ){
     uint len = 0, currLen;
 
-    printf("Slova:\n");
     for( int i = (int) dict->size - 1; i >= 0; i -- ){
         currLen = strlen( dict->word[i] );
 
@@ -248,6 +254,7 @@ int main(){
     inStr.strEnd = inStr.str;
 
     // load in the input and check for empty input
+    printf("Slova:\n");
     if( input(&inStr) ){
         printf("Nespravny vstup.\n");
         free(inStr.str);
@@ -270,13 +277,15 @@ int main(){
         freeDict(&dict);
         return 1;
     }
+
+    // free the long string because it's no longer needed
+    free(inStr.str);
     //printDictionary( &dict );
 
     // sort the dictionary lexicographically and check for duplicates
     qsort( dict.word, dict.size, sizeof(char*), compareDict );
     if( duplicates_flag ){
         printf("Nespravny vstup.\n");
-        free(inStr.str);
         freeDict(&dict);
         return 1;
     }
@@ -289,7 +298,6 @@ int main(){
     // print the output
     printFinal( &dict );
 
-    free(inStr.str);
     freeDict(&dict);
     return 0;
 }
