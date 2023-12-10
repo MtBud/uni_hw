@@ -211,9 +211,26 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
  * @return
  */
 int printFinal( struct dictionary* dict ){
-    for( int i = (int) dict->size - 1; i > 0; i -- )
-        printf("%s ", dict->word[i]);
-    printf("%s\n", dict->word[0]);
+    uint len = 0, currLen;
+    for( int i = (int) dict->size - 1; i > 0; i -- ){
+        currLen = strlen( dict->word[i] );
+
+        if( len == 0 ){
+            printf("%s", dict->word[i]);
+            len = currLen;
+            continue;
+        }
+
+        if( len + currLen >= 80 ){
+            len = currLen;
+            printf("\n%s", dict->word[i]);
+            continue;
+        }
+
+        printf(" %s", dict->word[i]);
+        len += currLen + 1;
+    }
+    printf("\n");
     return 0;
 }
 
