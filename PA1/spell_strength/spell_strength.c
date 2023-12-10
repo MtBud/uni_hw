@@ -212,7 +212,9 @@ int separate( struct strArr* inStr, struct dictionary* dict ){
  */
 int printFinal( struct dictionary* dict ){
     uint len = 0, currLen;
-    for( int i = (int) dict->size - 1; i > 0; i -- ){
+
+    printf("Slova:\n");
+    for( int i = (int) dict->size - 1; i >= 0; i -- ){
         currLen = strlen( dict->word[i] );
 
         if( len == 0 ){
