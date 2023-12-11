@@ -4,7 +4,7 @@ project(AAG)
 set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_FILES
-        ./AAG/determinization/determinization.cpp
+        ./AAG/alien_decoding/decoding.cpp
 )
 
 add_executable( my_project ${SOURCE_FILES})
