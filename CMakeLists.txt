@@ -4,7 +4,7 @@ project(recenze)
 set(CMAKE_C_STANDARD 11)
 
 set(SOURCE_FILES
-        ./PA1/spell_strength/spell_strength.c
+        ./PA1/transmission/transmission.c
 )
 
 add_executable( my_project ${SOURCE_FILES})
