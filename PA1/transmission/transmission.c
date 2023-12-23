@@ -197,12 +197,12 @@ int findTrans( struct s_transArr* database, struct s_transArr* result,
                struct s_transArr* progress, struct s_transmission* request,
                int offset, int level ){
     struct s_transmission ogSum = progress->sum;
-    progress->size = level;
 
 
     for( int i = 0 + offset; i < database->size; i ++ ){
         // do it twice for both variants of the transmission
         for( int j = 0; j < 2; j ++ ){
+            progress->size = level + 1;
             progress->array[level] = database->array[i];
             if( j == 1 )
                 swapTransmission( &progress->array[level] );
@@ -216,8 +216,8 @@ int findTrans( struct s_transArr* database, struct s_transArr* result,
 
             // overwrite result if better match has been found
             if( cmp <= 0 ){
+                simplifyFraction( &progress->sum );
                 copyArray( progress, result );
-                simplifyFraction( &result->sum );
 
                 // end recursion if best possible match has been found
                 if( cmp == 0 )
