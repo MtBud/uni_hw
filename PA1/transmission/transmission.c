@@ -1,22 +1,46 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#define MAX_TRANS 50
 
 /**
  * Represents one transmission pair
  */
 struct s_transmission{
-    int num1;
-    int num2;
+    long long num1;
+    long long num2;
 };
+
+/**
+ * Swaps the two values of the structure
+ * @param tr
+ */
+void swapTransmission( struct s_transmission* tr ){
+    long long x = tr->num1;
+    tr->num1 = tr->num2;
+    tr->num2 = x;
+}
 
 /**
  * Represents an array of s_transmission structures
  */
 struct s_transArr{
-    struct s_transmission array[50];
+    struct s_transmission array[MAX_TRANS];
     int size;
+    struct s_transmission sum;
 };
+
+/**
+ * Copies arr1 into arr2
+ * @param arr1
+ * @param arr2
+ */
+void copyArray( struct s_transArr* arr1, struct s_transArr* arr2 ){
+    for( int k = 0; k < arr1->size; k ++ )
+        arr2->array[k] = arr1->array[k];
+    arr2->sum = arr1->sum;
+    arr2->size = arr1->size;
+}
 
 /**
  * Prints the given array
@@ -24,8 +48,26 @@ struct s_transArr{
 void printArr( struct s_transArr* transArr ){
     printf("PRINT ARRAY\n");
     for( int i = 0; i < transArr->size; i++ ){
-        printf("%d:%d\n", transArr->array[i].num1, transArr->array[i].num2 );
+        printf("%lld:%lld\n", transArr->array[i].num1, transArr->array[i].num2 );
     }
+}
+
+/**
+ * Prints the array in format of a result
+ */
+void printResult( struct s_transArr* result ){
+    printf("%lld:%lld", result->sum.num1, result->sum.num2 );
+    if( result->sum.num1 == 1 && result->sum.num2 == 1 ){
+        printf("\n");
+        return;
+    }
+    printf(" = ");
+    for( int i = 0; i < result->size; i ++ ){
+        if( i != 0 )
+            printf(" * ");
+        printf("[%lld:%lld]", result->array[i].num1, result->array[i].num2 );
+    }
+    printf("\n");
 }
 
 /**
@@ -60,8 +102,8 @@ int input( bool* type, struct s_transArr* transArr, struct s_transmission* reque
     }
 
 
-    int num1, num2;
-    if( scanf( "%d:%d\n", &num1, &num2 ) != 2 ){
+    long long num1, num2;
+    if( scanf( "%lld:%lld\n", &num1, &num2 ) != 2 ){
         printf("ERROR: Scanf failed\n");
         return 1;
     }
@@ -93,7 +135,7 @@ int input( bool* type, struct s_transArr* transArr, struct s_transmission* reque
  * @param b
  * @return
  */
-int gcd(int a, int b){
+long long gcd(long long a, long long b){
     if (a == 0)
         return b;
     return gcd(b % a, a);
@@ -104,7 +146,7 @@ int gcd(int a, int b){
  * @param fr1
  */
 void simplifyFraction( struct s_transmission* fr1 ){
-    int gcdFr = gcd( fr1->num1, fr1->num2 );
+    long long gcdFr = gcd( fr1->num1, fr1->num2 );
     fr1->num1 = fr1->num1 / gcdFr;
     fr1->num2 = fr1->num2 / gcdFr;
 }
@@ -123,25 +165,83 @@ struct s_transmission multiplyFractions( struct s_transmission fr1, struct s_tra
 }
 
 /**
- * Finds the closest combination of transmissions from the given array
- * @return
+ * Function compares which of the two transmissions is more optimal
+ * @param tr1
+ * @param tr2
+ * @return 0 if the transmission is optimal, > 0 if the tested transmission is worse,
+ *          < 0 if the tested transmission is better
  */
-int findTrans( struct s_transArr* transArr, struct s_transmission* request ){
-    simplifyFraction( request );
-    if( request->num1 == 1 && request->num2 == 1 )
+int comparison( long double tested, long double smallest, long double wanted ){
+    long double diffTest, diffSmall;
+    if( tested == wanted )
         return 0;
-    return 0;
+
+    diffTest = tested / wanted;
+    if( diffTest > 1 )
+        diffTest = wanted / tested;
+
+    diffSmall = smallest / wanted;
+    if( diffSmall > 1 )
+        diffSmall = wanted / smallest;
+
+    if( diffTest < diffSmall )
+        return -1;
+    return 1;
+}
+
+/**
+ * Finds the closest combination of transmissions from the given array
+ * @return 0 if an exact match is found, 1 if the function exited by iterating over the loop
+ */
+int findTrans( struct s_transArr* database, struct s_transArr* result,
+               struct s_transArr* progress, struct s_transmission* request,
+               int offset, int level ){
+    struct s_transmission ogSum = progress->sum;
+
+
+    for( int i = 0 + offset; i < database->size; i ++ ){
+        // do it twice for both variants of the transmission
+        for( int j = 0; j < 2; j ++ ){
+            progress->array[offset] = database->array[i];
+            if( j == 1 )
+                swapTransmission( &progress->array[offset] );
+            progress->sum.num1 = ogSum.num1 * progress->array[offset].num1;
+            progress->sum.num2 = ogSum.num2 * progress->array[offset].num2;
+
+            // compare current iteration with best so far
+            int cmp = comparison( (long double) progress->sum.num1 / progress->sum.num2,
+                                  (long double) result->sum.num1 / result->sum.num2,
+                                  (long double) request->num1 / request->num2 );
+
+            // overwrite result if better match has been found
+            if( cmp <= 0 ){
+                copyArray( progress, result );
+
+                // end recursion if best possible match has been found
+                if( cmp == 0 )
+                    return 0;
+            }
+
+            // start recursion + end recursion if match is found
+            if( findTrans( database, result, progress, request, i + 1, level + 1 ) == 0 )
+                return 0;
+        }
+
+    }
+    return 1;
 }
 
 int main(){
     bool type = false;
     struct s_transmission request;
-    struct s_transArr transArr;
-    transArr.size = 0;
+    struct s_transArr database;
+    struct s_transArr progress;
+    struct s_transArr result;
+    database.size = 0;
 
     printf("Prevody:\n");
     while( true ){
-        int inputOut = input( &type, &transArr, &request );
+        int inputOut = input( &type, &database, &request );
         if( inputOut == -1 )
             break;
         if( inputOut == 1 ){
@@ -150,12 +250,17 @@ int main(){
         }
 
         if( inputOut == -2 ){
-            findTrans( &transArr, &request );
+            struct s_transmission tmp = {1,1};
+            result.size = 1;
+            result.array[0] = tmp;
+            result.sum = tmp;
+            findTrans( &database, &result, &progress, &request, 0, 0 );
+            printResult( &result );
         }
 
 
     }
 
-    printArr( &transArr );
+    printArr( &database );
     exit(EXIT_SUCCESS);
 }
