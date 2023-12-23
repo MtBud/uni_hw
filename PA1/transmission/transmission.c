@@ -83,17 +83,17 @@ int input( bool* type, struct s_transArr* transArr, struct s_transmission* reque
 
     // input checking of the query identifier
     if( queryID == EOF ){
-        printf("END EOF\n");
+        //printf("END EOF\n");
         return -1;
     }
 
     if( queryID != '+' && queryID != '?' ){
-        printf("ERROR: ID not recognized\n");
+        //printf("ERROR: ID not recognized\n");
         return 1;
     }
 
     if( queryID == '+' && *type ){
-        printf("ERROR: Adding new data after first request\n");
+        //printf("ERROR: Adding new data after first request\n");
         return 1;
     }
     if( queryID == '?' ){
@@ -104,14 +104,14 @@ int input( bool* type, struct s_transArr* transArr, struct s_transmission* reque
 
     long long num1, num2;
     if( scanf( "%lld:%lld\n", &num1, &num2 ) != 2 ){
-        printf("ERROR: Scanf failed\n");
+        //printf("ERROR: Scanf failed\n");
         return 1;
     }
 
     // add new entry to array
     if( queryID == '+' ){
         if( num1 < 10 || num1 > 1000 || num2 < 10 || num2 > 1000 ){
-            printf("ERROR: Numbers out of range\n");
+            //printf("ERROR: Numbers out of range\n");
             return 1;
         }
         transArr->array[transArr->size].num1 = num1;
@@ -121,7 +121,7 @@ int input( bool* type, struct s_transArr* transArr, struct s_transmission* reque
     }
 
     if( num1 <= 0 || num2 <= 0 ){
-        printf("ERROR: Numbers out of range\n");
+        //printf("ERROR: Numbers out of range\n");
         return 1;
     }
     request->num1 = num1;
@@ -177,11 +177,11 @@ int comparison( long double tested, long double smallest, long double wanted ){
         return 0;
 
     diffTest = tested / wanted;
-    if( diffTest > 1 )
+    if( diffTest < 1 )
         diffTest = wanted / tested;
 
     diffSmall = smallest / wanted;
-    if( diffSmall > 1 )
+    if( diffSmall < 1 )
         diffSmall = wanted / smallest;
 
     if( diffTest < diffSmall )
@@ -197,16 +197,17 @@ int findTrans( struct s_transArr* database, struct s_transArr* result,
                struct s_transArr* progress, struct s_transmission* request,
                int offset, int level ){
     struct s_transmission ogSum = progress->sum;
+    progress->size = level;
 
 
     for( int i = 0 + offset; i < database->size; i ++ ){
         // do it twice for both variants of the transmission
         for( int j = 0; j < 2; j ++ ){
-            progress->array[offset] = database->array[i];
+            progress->array[level] = database->array[i];
             if( j == 1 )
-                swapTransmission( &progress->array[offset] );
-            progress->sum.num1 = ogSum.num1 * progress->array[offset].num1;
-            progress->sum.num2 = ogSum.num2 * progress->array[offset].num2;
+                swapTransmission( &progress->array[level] );
+            progress->sum.num1 = ogSum.num1 * progress->array[level].num1;
+            progress->sum.num2 = ogSum.num2 * progress->array[level].num2;
 
             // compare current iteration with best so far
             int cmp = comparison( (long double) progress->sum.num1 / progress->sum.num2,
@@ -216,6 +217,7 @@ int findTrans( struct s_transArr* database, struct s_transArr* result,
             // overwrite result if better match has been found
             if( cmp <= 0 ){
                 copyArray( progress, result );
+                simplifyFraction( &result->sum );
 
                 // end recursion if best possible match has been found
                 if( cmp == 0 )
@@ -254,6 +256,7 @@ int main(){
             result.size = 1;
             result.array[0] = tmp;
             result.sum = tmp;
+            progress.sum = tmp;
             findTrans( &database, &result, &progress, &request, 0, 0 );
             printResult( &result );
         }
@@ -261,6 +264,6 @@ int main(){
 
     }
 
-    printArr( &database );
+    //printArr( &database );
     exit(EXIT_SUCCESS);
 }
