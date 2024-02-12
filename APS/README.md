@@ -5,7 +5,7 @@ The CPU uses a modified implementation of the diagram bellow.
 ![CPU diagram](./slides_microarch.png)
 
 ### Contents
-=========
+=========================================
 - [Assembly](./asm_src/)
     Basic assembly programs used for testing. Also contains [the program](./asm_src/Matyas_Budsky_prog1.asm) required by the assignment.
 
@@ -15,4 +15,4 @@ The CPU uses a modified implementation of the diagram bellow.
 - [Testbenches](./testbenches/)
     Basic unit tests for the more complex CPU circuits.
 
-Most files lack documentation, but with the provided diagram, it shouldn't be a big issue.
+Most files lack propper documentation, but with the provided diagram, it shouldn't be a big issue.
