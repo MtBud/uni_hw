@@ -1,0 +1,3 @@
+/home/meffisto/Coding/PA1_run_2/Sem_3_hw/cmake-build-debug/CMakeFiles/my_project.dir
+/home/meffisto/Coding/PA1_run_2/Sem_3_hw/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/meffisto/Coding/PA1_run_2/Sem_3_hw/cmake-build-debug/CMakeFiles/rebuild_cache.dir
