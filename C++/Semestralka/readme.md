@@ -27,5 +27,7 @@ Server can be configured from config.json located in /src . More about configura
 //-------------------------------------------------------------------------------------------------------------------
 
 Source code can be compiled using the Makefile ( make ).
+
 Documentation can be generated using the Makefile ( make doc ).
+
 In ./examples/test/scripts are Python scripts showcasing some server capabilities.
