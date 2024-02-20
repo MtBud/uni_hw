@@ -1,0 +1,52 @@
+{
+  "network": {
+    "port": 8080,
+    "address": "127.0.0.1"
+  },
+
+  "root": "./examples/server_filesystem",
+  "post": "/client/uploads/",
+  "shutdown": "/admin/shutdown",
+  "password": "admin-passwd",
+
+
+  "log": {
+    "path": "/log/main.log",
+    "console": true,
+    "file": false
+  },
+
+  "address-mapping": [
+    ["/admin", "/admin"],
+    ["/log", "/log"],
+    ["/scripts", "/scripts"],
+    ["/client", "/client"],
+    ["/", "/client"]
+  ],
+
+  "restricted": [
+    "/scripts",
+    "/admin",
+    "/log"
+  ],
+
+  "script-execution": {
+    ".c": "g++ $filename; ./a.out",
+    ".cpp": "g++ $filename; ./a.out",
+    ".sh": "chmod +x $filename; ./$filename",
+    ".py": "python3 $filename"
+  },
+
+  "file-extensions": {
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".png": "image",
+    ".gif": "image",
+    ".txt": "text",
+    ".html": "text",
+    ".css": "text",
+    ".csv": "text",
+    ".xml": "text",
+    ".mp4": "video"
+  }
+}
