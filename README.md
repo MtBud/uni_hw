@@ -8,6 +8,6 @@ Most of the work here was assigned to me at ČVUT-FIT university. Because of tha
 
 - [C++](./C++/) Homework from several different classes. Mainly C++ OOP class, but some from    Theory of computation as well.
 
-- [Python] - TODO
+- [HTTP server](./C++/Semestralka) My biggest project so far, a working HTTP server.
 
 - [Verilog](./Verilog/) Semestral work from Architecture of Computer Systems class.
