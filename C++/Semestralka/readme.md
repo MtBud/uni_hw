@@ -22,4 +22,10 @@ Server supports whole range of responses, not only limited to 200 and 404. Other
 Server supports logging to console and a file specified in config. Server logs miscelaneous messages, and
 both recieved and sent message headers and request lines.
 
-Server can be configured from config.json located in /src . More about configuration in CConfig
+Server can be configured from config.json located in /src . More about configuration in CConfig.
+
+//-------------------------------------------------------------------------------------------------------------------
+
+Source code can be compiled using the Makefile ( make ).
+Documentation can be generated using the Makefile ( make doc ).
+In ./examples/test/scripts are Python scripts showcasing some server capabilities.
